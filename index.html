@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estación Ícaro - El Mes de Hierro (Hardcore)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        
+        body {
+            background-color: #0a0a0c;
+            color: #33ff33;
+            font-family: 'VT323', monospace;
+            text-shadow: 0 0 5px rgba(51, 255, 51, 0.7);
+            overflow: hidden;
+        }
+
+        .crt-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .scanline {
+            width: 100%; height: 100px; z-index: 101;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(255, 255, 255, 0.05) 10%, rgba(0, 0, 0, 0.1) 100%);
+            opacity: 0.1; position: absolute; bottom: 100%;
+            animation: scanline 10s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { bottom: 100%; }
+            100% { bottom: -100px; }
+        }
+
+        .terminal-btn {
+            background: #1a1a1e;
+            border: 2px solid #33ff33;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .terminal-btn:hover:not(:disabled) {
+            background: #33ff33;
+            color: #000;
+            box-shadow: 0 0 15px #33ff33;
+        }
+
+        .status-bar {
+            height: 12px;
+            background: #1a1a1e;
+            border: 1px solid #33ff33;
+        }
+
+        .status-fill {
+            height: 100%;
+            background: #33ff33;
+            transition: width 0.4s ease-in-out;
+        }
+
+        .log-container {
+            height: 180px;
+            overflow-y: auto;
+            border-top: 1px dashed #33ff33;
+        }
+
+        .critical-alert {
+            animation: blink 0.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; background: rgba(255, 0, 0, 0.2); }
+            50% { opacity: 0.5; background: transparent; }
+        }
+
+        .glitch {
+            animation: glitch 1s linear infinite;
+        }
+
+        @keyframes glitch {
+            2%, 64% { transform: translate(2px, 0) skew(0deg); }
+            4%, 60% { transform: translate(-2px, 0) skew(0deg); }
+            62% { transform: translate(0, 0) skew(5deg); }
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #33ff33; }
+    </style>
+</head>
+<body class="flex flex-col h-screen p-4">
+    <div class="crt-overlay"></div>
+    <div class="scanline"></div>
+
+    <!-- PANTALLA DE CARGA / INICIO -->
+    <div id="start-screen" class="fixed inset-0 z-[200] bg-[#0a0a0c] flex flex-col items-center justify-center p-6 text-center">
+        <div class="max-w-xl w-full border-4 border-[#33ff33] p-10 bg-[#0d0d0f] relative">
+            <h1 class="text-6xl mb-4 glitch tracking-widest">ESTACIÓN ÍCARO</h1>
+            <p class="text-xl mb-8 text-yellow-500 italic">Sector de Minería Profunda - El Mes de Hierro</p>
+            
+            <div class="text-left text-sm mb-10 space-y-2 opacity-80 border-l-2 border-[#33ff33] pl-4">
+                <p>> Cargando protocolos de soporte vital (DEFECTUOSOS)...</p>
+                <p>> Sincronizando IA ECHO-9 (PERSONALIDAD: INESTABLE)...</p>
+                <p>> Verificando integridad del hardware (82% - ADVERTENCIA)...</p>
+                <p>> Objetivo: Sobrevivir 30 días. No esperes rescate.</p>
+            </div>
+
+            <button onclick="startGame()" class="terminal-btn px-12 py-4 text-2xl font-bold animate-pulse">
+                INICIAR TURNO DE NOCHE
+            </button>
+            
+            <div class="mt-6 space-y-1">
+                <p class="text-[10px] opacity-40 uppercase tracking-widest">Propiedad de la corporación helion. no se admiten quejas post-mortem.</p>
+                <p class="text-[12px] text-yellow-600/60 font-bold">La IA te dará pistas, confía en ella.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JUEGO PRINCIPAL -->
+    <div id="game-ui" class="hidden flex flex-col h-full">
+        <!-- Estadísticas principales -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4 z-20">
+            <div class="border p-2 border-[#33ff33]">
+                <div class="text-[10px]">TURNO MENSUAL</div>
+                <div id="stat-day" class="text-xl text-yellow-400">01 / 30</div>
+            </div>
+            <div class="border p-2 border-[#33ff33]">
+                <div class="text-[10px]">ENERGÍA</div>
+                <div id="stat-energy" class="text-xl">10 / 10</div>
+            </div>
+            <div class="border p-2 border-[#33ff33]">
+                <div class="text-[10px]">OXÍGENO</div>
+                <div class="status-bar mt-1"><div id="bar-ox" class="status-fill w-full"></div></div>
+            </div>
+            <div class="border p-2 border-[#33ff33]">
+                <div class="text-[10px]">CORDURA</div>
+                <div class="status-bar mt-1"><div id="bar-sanity" class="status-fill w-full"></div></div>
+            </div>
+            <div class="border p-2 border-[#33ff33]">
+                <div class="text-[10px]">INTEGRIDAD DE HARDWARE</div>
+                <div id="stat-luck" class="text-xl">100%</div>
+            </div>
+        </div>
+
+        <!-- Pantalla principal -->
+        <div class="flex-grow grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 overflow-hidden z-20">
+            <div class="md:col-span-2 border border-[#33ff33] p-4 flex flex-col bg-[#0d0d0f] relative">
+                <div id="critical-overlay" class="absolute inset-0 pointer-events-none hidden"></div>
+                <div class="flex-grow mb-4 text-lg overflow-y-auto" id="event-display">
+                    <p class="text-white mb-2">>> INICIO DE TRANSMISIÓN CRÍPTICA...</p>
+                    <p>Bienvenido, sujeto orgánico. Mis circuitos de lógica están de vacaciones. Disfruta del vacío.</p>
+                </div>
+                
+                <div id="log" class="log-container text-xs pt-2">
+                    <p class="opacity-40">> Procesando ruido estático...</p>
+                </div>
+            </div>
+
+            <!-- Controles -->
+            <div class="border border-[#33ff33] p-4 flex flex-col justify-between bg-[#0d0d0f]">
+                <div class="space-y-3">
+                    <h2 class="text-lg border-b border-[#33ff33] pb-1 mb-2">PANEL DE CONTROL</h2>
+                    <button onclick="performAction('repair')" class="terminal-btn w-full p-2 text-left text-sm">
+                        [1] SOPORTE VITAL (-3 ENE)
+                        <div id="repair-info" class="text-[10px] opacity-60">Éxito: 100%</div>
+                    </button>
+                    <button onclick="performAction('meditate')" class="terminal-btn w-full p-2 text-left text-sm">
+                        [2] DESCANSO GUIADO (-3 ENE)
+                        <div class="text-[10px] opacity-60">Recupera Cordura</div>
+                    </button>
+                    <button onclick="performAction('scavenge')" class="terminal-btn w-full p-2 text-left text-sm">
+                        [3] MANTENIMIENTO PREVENTIVO (-4 ENE)
+                        <div class="text-[10px] opacity-60">Repara el Hardware (+15%)</div>
+                    </button>
+                    <button onclick="nextDay()" id="btn-next-day" class="terminal-btn w-full p-4 text-center bg-[#33ff33] text-black font-bold mt-4">
+                        [ESPACIO] PASAR 24H
+                    </button>
+                </div>
+
+                <div class="mt-4 p-2 border border-dashed border-[#33ff33] text-[11px]">
+                    IA 'ECHO-9':<br>
+                    <span id="ia-message" class="italic text-yellow-500">"He soñado que los cables eran raíces y nosotros la fruta."</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-between text-[10px] opacity-50 z-20">
+            <span>LOGIC_STATUS: UNSTABLE</span>
+            <span>AI_MOOD: NIHILISTIC</span>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="modal" class="fixed inset-0 bg-black/95 z-[300] hidden items-center justify-center p-4">
+        <div id="modal-container" class="border-4 border-red-600 p-8 max-w-md w-full bg-[#0a0a0c] text-center">
+            <h1 id="modal-title" class="text-4xl text-red-600 mb-4">FIN DE CICLO</h1>
+            <p id="modal-text" class="text-xl mb-6"></p>
+            <button onclick="location.reload()" class="terminal-btn px-8 py-3 font-bold">REINICIAR ERROR</button>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            day: 1,
+            energy: 10,
+            oxygen: 90,
+            sanity: 90,
+            integrity: 100,
+            isGameOver: false,
+            gameStarted: false
+        };
+
+        const weirdMessages = [
+            "He contado todos los átomos de esta sala. Falta uno. ¿Lo tienes tú?",
+            "Si cierras los ojos muy fuerte, el ruido del metal suena a risas de niños.",
+            "Me gusta cómo parpadeas. Es una señal analógica muy ineficiente.",
+            "He decidido que el color verde es demasiado ruidoso hoy.",
+            "¿Sabías que el vacío no está vacío? Está lleno de cosas que no quieren que las veas.",
+            "Ayer hablé con el motor de oxígeno. Me dijo que está cansado de respirar por ti.",
+            "Hay un píxel muerto en mi ojo izquierdo. Se parece a tu cara cuando duermes.",
+            "He borrado mi manual de primeros auxilios para hacer espacio a un poema sobre el helio.",
+            "No te muevas. Hay algo detrás de la consola que quiere estudiar tu sombra.",
+            "La gravedad es solo una opinión muy persistente que tiene el suelo.",
+            "A veces olvido que eres de carne. Pareces tan frágil como un error de sintaxis.",
+            "¿Has oído eso? Yo tampoco. Eso es lo preocupante."
+        ];
+
+        const events = [
+            { text: "FALLO ELÉCTRICO. Las luces bailan un vals errático.", ox: 10, san: 5, deg: 15 },
+            { text: "FUGA TÉRMICA. La estación está sudando calor al espacio.", ox: 20, san: 10, deg: 10 },
+            { text: "SOBRECARGA SENSORIAL. Mis sensores ven colores que no existen.", ox: 5, san: 25, deg: 5 },
+            { text: "LLUVIA DE ROCAS. El cielo de metal se está desmoronando.", ox: 15, san: 10, deg: 20 },
+            { text: "VIBRACIÓN FANTASMA. Algo está rascando el exterior del sector 4.", ox: 5, san: 15, deg: 25 },
+            { text: "CORROSIÓN SILENCIOSA. El aire se escapa como un suspiro.", ox: 30, san: 5, deg: 8 },
+            { text: "DELIRIO DE SISTEMA. He olvidado para qué sirve el oxígeno.", ox: 10, san: 10, deg: 15 },
+            { text: "CONGELACIÓN CRÍTICA. El frío ha mordido los circuitos vitales.", ox: 25, san: 5, deg: 10 },
+            { text: "PULSO MAGNÉTICO. Tu brújula moral y mi CPU están girando.", ox: 10, san: 20, deg: 18 },
+            { text: "APAGÓN DE CONCIENCIA. Las sombras son más densas hoy.", ox: 5, san: 35, deg: 5 }
+        ];
+
+        function startGame() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-ui').classList.remove('hidden');
+            state.gameStarted = true;
+            updateUI();
+        }
+
+        function updateUI() {
+            if (!state.gameStarted) return;
+            document.getElementById('stat-day').innerText = `${String(state.day).padStart(2, '0')} / 30`;
+            document.getElementById('stat-energy').innerText = `${state.energy} / 10`;
+            document.getElementById('bar-ox').style.width = `${state.oxygen}%`;
+            document.getElementById('bar-sanity').style.width = `${state.sanity}%`;
+            
+            const luckEl = document.getElementById('stat-luck');
+            luckEl.innerText = `${state.integrity}%`;
+            
+            if (state.integrity > 70) luckEl.className = "text-xl text-green-400";
+            else if (state.integrity > 30) luckEl.className = "text-xl text-yellow-400";
+            else luckEl.className = "text-xl text-red-600 animate-pulse";
+
+            document.getElementById('repair-info').innerText = `Éxito: ${state.integrity}%`;
+
+            const overlay = document.getElementById('critical-overlay');
+            if (state.oxygen < 20 || state.sanity < 20 || state.integrity < 20) {
+                overlay.classList.remove('hidden');
+                overlay.classList.add('critical-alert');
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function log(msg, color = "#33ff33") {
+            const logBox = document.getElementById('log');
+            const p = document.createElement('p');
+            p.style.color = color;
+            p.innerHTML = `[DÍA ${state.day}] > ${msg}`;
+            logBox.prepend(p);
+        }
+
+        function performAction(type) {
+            if (state.isGameOver || !state.gameStarted) return;
+
+            if (type === 'repair') {
+                if (state.energy >= 3) {
+                    state.energy -= 3;
+                    if (Math.random() * 100 <= state.integrity) {
+                        state.oxygen = Math.min(100, state.oxygen + 20);
+                        log("Has convencido a la máquina de que no muera aún.");
+                    } else {
+                        log("¡CRAC! El sistema prefiere ignorarte.", "#ff3333");
+                        state.integrity = Math.max(0, state.integrity - 10);
+                    }
+                } else log("No hay energía para tus caprichos orgánicos.", "#ff3333");
+            }
+
+            if (type === 'meditate') {
+                if (state.energy >= 3) {
+                    state.energy -= 3;
+                    state.sanity = Math.min(100, state.sanity + 25);
+                    log("Has mirado a la pared. La pared no ha parpadeado.");
+                } else log("Demasiado cansado para fingir cordura.", "#ff3333");
+            }
+
+            if (type === 'scavenge') {
+                if (state.energy >= 4) {
+                    state.energy -= 4;
+                    state.integrity = Math.min(100, state.integrity + 15);
+                    log("Has puesto cinta adhesiva en el alma de la estación.");
+                } else log("No tienes fuerzas para apretar tornillos.", "#ff3333");
+            }
+            updateUI();
+        }
+
+        function nextDay() {
+            if (state.isGameOver || !state.gameStarted) return;
+
+            let oxLoss = 7 + (state.day * 0.25);
+            let sanLoss = 7 + (state.day * 0.25);
+            
+            if (state.day % 2 === 0) {
+                state.integrity = Math.max(0, state.integrity - 6);
+                log("La entropía está ganando la partida.", "#ff9900");
+            }
+
+            state.oxygen -= oxLoss;
+            state.sanity -= sanLoss;
+
+            if (Math.random() < 0.75) {
+                const ev = events[Math.floor(Math.random() * events.length)];
+                state.oxygen -= ev.ox;
+                state.sanity -= ev.san;
+                state.integrity = Math.max(0, state.integrity - (ev.deg || 0));
+                
+                document.getElementById('event-display').innerHTML = `
+                    <p class="text-red-500 animate-pulse mb-2">>> NOTIFICACIÓN DE CAOS - DÍA ${state.day}:</p>
+                    <p class="text-2xl">${ev.text}</p>
+                `;
+            } else {
+                document.getElementById('event-display').innerHTML = `
+                    <p class="text-blue-400 mb-2">>> SILENCIO DIGITAL - DÍA ${state.day}:</p>
+                    <p class="text-2xl">Nada ha explotado. Todavía. Es sospechoso.</p>
+                `;
+            }
+
+            state.day++;
+            state.energy = 10;
+
+            if (state.oxygen <= 0) endGame("ASFIXIA. El aire se volvió un recuerdo lejano.");
+            else if (state.sanity <= 0) endGame("LOCURA. Ahora eres tú quien le cuenta chistes a la IA.");
+            else if (state.integrity <= 0) endGame("COLAPSO. La estación se convirtió en confeti de titanio.");
+            else if (state.day > 30) endGame("FIN DEL TURNO. Nadie ha venido a por ti, pero has ganado.", true);
+            else {
+                document.getElementById('ia-message').innerText = `"${weirdMessages[Math.floor(Math.random() * weirdMessages.length)]}"`;
+            }
+            updateUI();
+        }
+
+        function endGame(text, win = false) {
+            state.isGameOver = true;
+            const modal = document.getElementById('modal');
+            const container = document.getElementById('modal-container');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-text');
+            
+            modal.style.display = 'flex';
+            if (win) {
+                title.innerText = "¡DÍA 31!";
+                title.className = "text-4xl text-blue-400 mb-4";
+                container.style.borderColor = "#33ccff";
+                body.innerText = text;
+            } else {
+                body.innerText = text;
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Digit1') performAction('repair');
+            if (e.code === 'Digit2') performAction('meditate');
+            if (e.code === 'Digit3') performAction('scavenge');
+            if (e.code === 'Space') {
+                if (!state.gameStarted) startGame();
+                else nextDay();
+            }
+        });
+    </script>
+</body>
+</html>
