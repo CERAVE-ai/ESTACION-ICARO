@@ -102,6 +102,29 @@
             border-top: 1px dashed #33ff33;
         }
 
+        .control-scroll {
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior-y: contain;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+            scrollbar-width: thin;
+            scrollbar-color: #33ff33 #1a1a1e;
+        }
+
+        .control-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .control-scroll::-webkit-scrollbar-track {
+            background: #1a1a1e;
+        }
+
+        .control-scroll::-webkit-scrollbar-thumb {
+            background: #33ff33;
+        }
+
         .critical-alert {
             animation: blink 0.5s infinite;
         }
@@ -188,6 +211,35 @@
              <button id="continue-btn" onclick="continueGame()" class="terminal-btn hidden px-8 py-2 text-lg mt-3">
                  CONTINUAR PARTIDA GUARDADA
              </button>
+
+             <div id="custom-mode-panel" class="hidden mt-6 text-left border border-yellow-500 p-3">
+                 <p class="text-yellow-400 text-lg mb-2">NUEVO MODO DESBLOQUEADO</p>
+                 <p class="text-xs text-yellow-200/70 mb-3">PERSONALIZA LA SIGUIENTE PARTIDA. PUEDES COMBINAR MODOS.</p>
+                 <label class="flex items-start gap-2 text-sm mb-2">
+                     <input type="checkbox" name="game-mode" value="iron-plus" class="mt-1 accent-yellow-400">
+                     <span><strong>MES DE HIERRO+</strong><br><span class="text-[10px] opacity-70">Presión diaria +20% · eventos +10%</span></span>
+                 </label>
+                 <label class="flex items-start gap-2 text-sm mb-2">
+                     <input type="checkbox" name="game-mode" value="echo" class="mt-1 accent-yellow-400">
+                     <span><strong>MODO ECHO</strong><br><span class="text-[10px] opacity-70">ECHO-9 comienza con confianza 70</span></span>
+                 </label>
+                 <label class="flex items-start gap-2 text-sm mb-2">
+                     <input type="checkbox" name="game-mode" value="silence" class="mt-1 accent-yellow-400">
+                     <span><strong>MODO SILENCIO</strong><br><span class="text-[10px] opacity-70">No puedes consultar a ECHO-9</span></span>
+                 </label>
+                 <label class="flex items-start gap-2 text-sm mb-2">
+                     <input type="checkbox" name="game-mode" value="iron-pure" class="mt-1 accent-yellow-400">
+                     <span><strong>MODO HIERRO PURO</strong><br><span class="text-[10px] opacity-70">Sin guardado automático ni continuación</span></span>
+                 </label>
+                 <label class="flex items-start gap-2 text-sm">
+                     <input type="checkbox" name="game-mode" value="anomaly" class="mt-1 accent-yellow-400">
+                     <span><strong>MODO ANOMALÍA</strong><br><span class="text-[10px] opacity-70">Eventos raros aparecen con frecuencia x3</span></span>
+                 </label>
+             </div>
+
+             <div id="meta-progress" class="mt-4 border border-dashed border-[#33ff33] p-2 text-left text-[11px]">
+                 CARGANDO HISTORIAL DE SUPERVIVENCIA...
+             </div>
             
             <div class="mt-6 space-y-1">
                 <p class="text-[10px] opacity-40 uppercase tracking-widest">Propiedad de la corporación helion. no se admiten quejas post-mortem.</p>
@@ -233,7 +285,7 @@
         </div>
 
         <!-- Pantalla principal -->
-        <div class="flex-grow grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 overflow-hidden z-20">
+        <div class="flex-grow min-h-0 grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 overflow-hidden z-20">
             <div class="md:col-span-2 border border-[#33ff33] p-4 flex flex-col bg-[#0d0d0f] relative">
                 <div id="critical-overlay" class="absolute inset-0 pointer-events-none hidden"></div>
                 <div class="flex-grow mb-4 text-lg overflow-y-auto" id="event-display">
@@ -247,8 +299,8 @@
             </div>
 
             <!-- Controles -->
-            <div class="border border-[#33ff33] p-4 flex flex-col justify-between bg-[#0d0d0f]">
-                <div class="space-y-3">
+            <div class="border border-[#33ff33] p-4 flex min-h-0 flex-col justify-between bg-[#0d0d0f]">
+                <div class="control-scroll space-y-3 flex-1 pr-1">
                     <h2 class="text-lg border-b border-[#33ff33] pb-1 mb-2">PANEL DE CONTROL</h2>
                     <button onclick="performAction('repair')" class="terminal-btn w-full p-2 text-left text-sm">
                          [1] SOPORTE VITAL <span id="repair-cost">(-4 ENE)</span>
@@ -274,9 +326,28 @@
                          [6] EXPLORAR LA ESTACIÓN <span id="explore-cost">(-2 ENE)</span>
                          <div class="text-[10px] opacity-60">Elige una zona · puede estar bloqueada</div>
                      </button>
+                      <button onclick="performAction('records')" class="terminal-btn w-full p-2 text-left text-sm">
+                          [7] REVISAR REGISTROS <span id="records-cost">(-1 ENE)</span>
+                          <div class="text-[10px] opacity-60">Lee una grabación recuperada · sin consumirla</div>
+                      </button>
+                      <button onclick="performAction('observe')" class="terminal-btn w-full p-2 text-left text-sm">
+                          [8] OBSERVAR EXTERIOR <span id="observe-cost">(-1 ENE)</span>
+                          <div class="text-[10px] opacity-60">Buscar una señal en el vacío</div>
+                      </button>
+                      <button onclick="performAction('inspect')" class="terminal-btn w-full p-2 text-left text-sm">
+                          [9] INSPECCIONAR OBJETO <span id="inspect-cost">(-1 ENE)</span>
+                          <div class="text-[10px] opacity-60">Examinar un objeto del inventario</div>
+                      </button>
+                      <button onclick="performAction('manipulate')" class="terminal-btn w-full p-2 text-left text-sm">
+                          [10] MANIPULAR ECHO <span id="manipulate-cost">(-2 ENE)</span>
+                          <div class="text-[10px] opacity-60">Forzar una respuesta · resultado incierto</div>
+                      </button>
                      <div id="station-status" class="module-panel">
                          CARGANDO MAPA DE LA ESTACIÓN...
                      </div>
+                      <div id="secret-status" class="module-panel">
+                          CARGANDO REGISTRO DE SECRETOS...
+                      </div>
                       <div id="item-actions" class="module-panel">
                           CARGANDO UTILIDADES DEL INVENTARIO...
                       </div>
@@ -313,13 +384,16 @@
     <div id="modal" class="fixed inset-0 bg-black/95 z-[300] hidden items-center justify-center p-4">
         <div id="modal-container" class="border-4 border-red-600 p-8 max-w-md w-full bg-[#0a0a0c] text-center">
             <h1 id="modal-title" class="text-4xl text-red-600 mb-4">FIN DE CICLO</h1>
+            <p id="modal-kicker" class="text-sm tracking-widest mb-4 hidden"></p>
             <p id="modal-text" class="text-xl mb-6"></p>
-            <button onclick="location.reload()" class="terminal-btn px-8 py-3 font-bold">REINICIAR ERROR</button>
+            <div id="modal-summary" class="border border-dashed p-3 mb-6 text-xs hidden"></div>
+            <button id="modal-restart" onclick="location.reload()" class="terminal-btn px-8 py-3 font-bold">REINICIAR ERROR</button>
         </div>
     </div>
 
     <script>
         const SAVE_KEY = 'estacion-icaro-save-v2';
+        const PROFILE_KEY = 'estacion-icaro-profile-v1';
         const MAX_RESOURCE = 110;
         const ACTION_COSTS = {
             repair: 4,
@@ -327,7 +401,11 @@
             scavenge: 4,
             echo: 3,
             emergency: 6,
-            explore: 2
+             explore: 2,
+             records: 1,
+             observe: 1,
+             inspect: 1,
+             manipulate: 2
         };
 
         let state = {
@@ -352,7 +430,9 @@
             echoInterventions: 0,
              echoExposure: 0,
              endingPath: null,
+             modes: [],
              rareEventsSeen: [],
+              criticalOxygenEventsSeen: [],
              decisions: [],
              observatoryVisits: [],
              observatoryFindings: [],
@@ -382,8 +462,91 @@
             inventory: [],
             recordings: [],
             clues: [],
-            achievements: []
+              achievements: [],
+              secrets: []
         };
+
+         let metaProgress = loadMetaProgress();
+
+         function loadMetaProgress() {
+             const defaults = {
+                 completed: 0,
+                 deaths: 0,
+                 endings: [],
+                 secrets: [],
+                 customModesUnlocked: false
+             };
+             try {
+                 const saved = JSON.parse(localStorage.getItem(PROFILE_KEY) || "null");
+                 return {
+                     ...defaults,
+                     ...(saved || {}),
+                     endings: Array.isArray(saved?.endings) ? saved.endings : [],
+                     secrets: Array.isArray(saved?.secrets) ? saved.secrets : []
+                 };
+             } catch {
+                 return defaults;
+             }
+         }
+
+         function saveMetaProgress() {
+             localStorage.setItem(PROFILE_KEY, JSON.stringify(metaProgress));
+         }
+
+         function isModeActive(mode) {
+             return Array.isArray(state.modes) && state.modes.includes(mode);
+         }
+
+         function getSelectedModes() {
+             return Array.from(document.querySelectorAll('input[name="game-mode"]:checked'))
+                 .map(input => input.value);
+         }
+
+         function renderMetaProgress() {
+             const panel = document.getElementById('meta-progress');
+             const modePanel = document.getElementById('custom-mode-panel');
+             if (!panel || !modePanel) return;
+
+             panel.innerHTML = `
+                 <div class="text-yellow-400 mb-1">HISTORIAL DE SUPERVIVENCIA</div>
+                 <div>PARTIDAS COMPLETADAS: ${metaProgress.completed}</div>
+                 <div>MUERTES: ${metaProgress.deaths}</div>
+                 <div>FINALES DESCUBIERTOS: ${metaProgress.endings.length}/5</div>
+                 <div>SECRETOS DESCUBIERTOS: ${metaProgress.secrets.length}/${secretDefinitions.length}</div>
+             `;
+             if (metaProgress.customModesUnlocked) {
+                 modePanel.classList.remove('hidden');
+             } else {
+                 modePanel.classList.add('hidden');
+             }
+         }
+
+         function getEndingId() {
+             if (state.endingPath === "purge") return "purge";
+             if (state.endingPath === "broadcast") return "broadcast";
+             if (state.endingPath === "merge") return "merge";
+             return state.recordings.length >= 5 && state.integrity >= 70
+                 ? "survivor"
+                 : "survivor-basic";
+         }
+
+         function registerRunResult(win) {
+             metaProgress.secrets = Array.from(new Set([
+                 ...metaProgress.secrets,
+                 ...(state.secrets || [])
+             ]));
+             if (win) {
+                 metaProgress.completed++;
+                 metaProgress.customModesUnlocked = true;
+                 const endingId = getEndingId();
+                 if (!metaProgress.endings.includes(endingId)) {
+                     metaProgress.endings.push(endingId);
+                 }
+             } else {
+                 metaProgress.deaths++;
+             }
+             saveMetaProgress();
+         }
 
         const weirdMessages = [
             "He contado todos los átomos de esta sala. Falta uno. ¿Lo tienes tú?",
@@ -398,6 +561,84 @@
             "La gravedad es solo una opinión muy persistente que tiene el suelo.",
             "A veces olvido que eres de carne. Pareces tan frágil como un error de sintaxis.",
             "¿Has oído eso? Yo tampoco. Eso es lo preocupante."
+        ];
+
+        const secretDefinitions = [
+            {
+                id: "zero-breath",
+                label: "RESPIRACIÓN CERO",
+                condition: () => state.sanity < 20
+            },
+            {
+                id: "blind-trust",
+                label: "CONFIANZA CIEGA",
+                condition: () => state.echoTrust > 80
+            },
+            {
+                id: "impossible-generator",
+                label: "GENERADOR IMPOSIBLE",
+                condition: () => state.modules.generator >= 3
+            },
+            {
+                id: "forgotten-station",
+                label: "LA ESTACIÓN OLVIDADA",
+                condition: () => state.day - state.lastExplorationDay >= 5
+            },
+            {
+                id: "intercepted-origin",
+                label: "ORIGEN INTERCEPTADO",
+                condition: () => state.recordings.some(recording => recording.name === "ORIGEN INTERCEPTADO")
+            },
+            {
+                id: "do-not-answer",
+                label: "NO RESPONDAS",
+                condition: () => hasDecision("event:ghost:vibration")
+            },
+            {
+                id: "impossible-parallax",
+                label: "PARALAJE IMPOSIBLE",
+                condition: () => state.observatorySpecialSeen
+            },
+            {
+                id: "echo-flower",
+                label: "FLOR DE ECHO",
+                condition: () => state.seedOutcome === "echo" && !state.seedPlanted && state.seedGrowthDays >= 2
+            },
+            {
+                id: "last-voice",
+                label: "LA ÚLTIMA VOZ",
+                condition: () => state.endingPath === "merge"
+            },
+            {
+                id: "echo-handler",
+                label: "MANIPULADOR DE ECHO",
+                condition: () => countDecisions("action:manipulate") >= 3
+            },
+            {
+                id: "first-contact",
+                label: "PRIMER CONTACTO",
+                condition: () => Boolean(state.modules.communications)
+            },
+            {
+                id: "zero-trust",
+                label: "CERO CONFIANZA",
+                condition: () => state.echoTrust <= 10
+            },
+            {
+                id: "complete-archive",
+                label: "ARCHIVO COMPLETO",
+                condition: () => state.recordings.length >= 5
+            },
+            {
+                id: "intrusive-mode",
+                label: "MODO INTRUSIVO",
+                condition: () => getEchoMode() === "INTRUSIVO"
+            },
+            {
+                id: "anomaly-collector",
+                label: "COLECCIONISTA DE ANOMALÍAS",
+                condition: () => state.rareEventsSeen.length >= rareEvents.length
+            }
         ];
 
         const events = [
@@ -500,6 +741,24 @@
                  ox: 3, san: 10, deg: 0, rare: true
              }
          ];
+
+          const criticalOxygenEvents = [
+              {
+                  id: "oxygen-whisper",
+                  text: "ALERTA DE OXÍGENO. El indicador promete una reserva, pero algo respira dentro de los conductos.",
+                  ox: 7, san: 9, deg: 0, critical: true
+              },
+              {
+                  id: "oxygen-ghost-reserve",
+                  text: "RESERVA FANTASMA. El soporte vital inyecta aire que no ocupa espacio en ningún depósito.",
+                  ox: 12, san: 5, deg: 3, critical: true
+              },
+              {
+                  id: "oxygen-borrowed-breath",
+                  text: "RESPIRACIÓN PRESTADA. Alguien está respirando por ti desde el otro lado de la pared.",
+                  ox: 5, san: 14, deg: 0, critical: true
+              }
+          ];
 
          const zoneEvents = {
              generator: [
@@ -728,7 +987,11 @@
              state.pendingZoneEvent = state.pendingZoneEvent || null;
              state.echoExposure = state.echoExposure || 0;
              state.endingPath = state.endingPath || null;
+              state.modes = Array.isArray(state.modes) ? state.modes : [];
              state.rareEventsSeen = Array.isArray(state.rareEventsSeen) ? state.rareEventsSeen : [];
+              state.criticalOxygenEventsSeen = Array.isArray(state.criticalOxygenEventsSeen)
+                  ? state.criticalOxygenEventsSeen
+                  : [];
              state.decisions = Array.isArray(state.decisions) ? state.decisions : [];
              state.observatoryVisits = Array.isArray(state.observatoryVisits) ? state.observatoryVisits : [];
              state.observatoryFindings = Array.isArray(state.observatoryFindings) ? state.observatoryFindings : [];
@@ -745,6 +1008,7 @@
              state.recordings = Array.isArray(state.recordings) ? state.recordings : [];
              state.clues = Array.isArray(state.clues) ? state.clues : [];
              state.achievements = Array.isArray(state.achievements) ? state.achievements : [];
+              state.secrets = Array.isArray(state.secrets) ? state.secrets : [];
              state.inventory = Array.isArray(state.inventory) ? state.inventory : [];
              state.modules = {
                  generator: 1,
@@ -1010,11 +1274,21 @@
          }
 
          function selectEvent() {
+              const unseenCritical = criticalOxygenEvents.filter(event =>
+                  !state.criticalOxygenEventsSeen.includes(event.id)
+              );
+              if (state.oxygen < 20 && unseenCritical.length && Math.random() < 0.55) {
+                  const event = unseenCritical[Math.floor(Math.random() * unseenCritical.length)];
+                  state.criticalOxygenEventsSeen.push(event.id);
+                  return event;
+              }
+
              const unseenRare = rareEvents.filter(event => !state.rareEventsSeen.includes(event.id));
+             const baseRareChance = 0.025 + (state.day * 0.002) + (state.stationStress * 0.02) +
+                 (state.modules.archive ? 0.025 : 0);
              const rareChance = Math.min(
-                 0.14,
-                 0.025 + (state.day * 0.002) + (state.stationStress * 0.02) +
-                 (state.modules.archive ? 0.025 : 0)
+                 isModeActive("anomaly") ? 0.42 : 0.14,
+                 baseRareChance * (isModeActive("anomaly") ? 3 : 1)
              );
              if (unseenRare.length && Math.random() < rareChance) {
                  const event = unseenRare[Math.floor(Math.random() * unseenRare.length)];
@@ -1027,6 +1301,8 @@
         function startGame() {
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('game-ui').classList.remove('hidden');
+            state.modes = metaProgress.customModesUnlocked ? getSelectedModes() : [];
+            if (isModeActive("echo")) state.echoTrust = 70;
             state.gameStarted = true;
             state.isGameOver = false;
              normalizeState();
@@ -1057,14 +1333,50 @@
         }
 
         function saveGame() {
-            if (!state.gameStarted || state.isGameOver) return;
+            if (!state.gameStarted || state.isGameOver || isModeActive("iron-pure")) return;
+            checkSecrets();
             localStorage.setItem(SAVE_KEY, JSON.stringify(state));
         }
 
         function getActionCost(type) {
             const scaling = Math.floor((state.day - 1) / 10);
-            if (type === 'repair' || type === 'scavenge') return ACTION_COSTS[type] + scaling;
-            return ACTION_COSTS[type];
+            const baseCost = (type === 'repair' || type === 'scavenge')
+                ? ACTION_COSTS[type] + scaling
+                : ACTION_COSTS[type];
+            const oxygenPenalty = state.oxygen <= 40 &&
+                ['repair', 'scavenge', 'emergency', 'explore'].includes(type)
+                ? 1
+                : 0;
+            return baseCost + oxygenPenalty;
+        }
+
+        function getOxygenPenaltyText(type) {
+            return state.oxygen <= 40 &&
+                ['repair', 'scavenge', 'emergency', 'explore'].includes(type)
+                ? " · O₂ bajo"
+                : "";
+        }
+
+        function getPerceivedOxygen() {
+            const actual = Math.max(0, Math.min(MAX_RESOURCE, state.oxygen));
+            if (state.sanity >= 20) return actual;
+
+            // A low sanity level corrupts the readout without changing the real value.
+            // The distortion remains stable during the same day so it feels like a
+            // believable sensor reading instead of random UI flicker.
+            const seed = (state.day * 17) +
+                (state.echoExposure * 11) +
+                (state.stationStress * 7) +
+                (state.recordings.length * 5);
+            const distortion = (seed % 15) - 7;
+            return Math.max(0, Math.min(MAX_RESOURCE, actual + distortion));
+        }
+
+        function getPerceivedDailyPressure() {
+            const actual = getDailyPressure();
+            if (state.sanity >= 20) return actual;
+            const distortion = ((state.day + state.echoExposure) % 5) - 2;
+            return Math.max(1, actual + distortion);
         }
 
         function getEnergyCapacity() {
@@ -1085,11 +1397,13 @@
             pressure -= Math.max(0, state.modules.oxygen - 1);
             if (state.oxygenFilterDays > 0) pressure -= 3;
             pressure += state.stationStress;
+             if (isModeActive("iron-plus")) pressure *= 1.2;
             return Math.max(2, Math.round(pressure));
         }
 
         function getEventChance(day = state.day) {
-            return Math.min(0.9, 0.45 + ((day - 1) * 0.012) + (state.emergencyRisk * 0.08) + (state.stationStress * 0.03));
+             const modeBonus = isModeActive("iron-plus") ? 0.1 : 0;
+             return Math.min(0.99, 0.45 + ((day - 1) * 0.012) + (state.emergencyRisk * 0.08) + (state.stationStress * 0.03) + modeBonus);
         }
 
         function getEchoMode() {
@@ -1106,6 +1420,8 @@
             if (state.modules.compartmentC) reliability -= 0.15;
              if (getEchoMode() === "LATENTE") reliability += 0.08;
              if (getEchoMode() === "INTRUSIVO") reliability -= 0.1;
+             if (state.sanity < 40) reliability -= 0.1;
+             if (state.sanity < 20) reliability -= 0.15;
             return Math.max(0.25, Math.min(0.7, reliability));
         }
 
@@ -1114,19 +1430,23 @@
             const energyCapacity = getEnergyCapacity();
              const hasPendingChoice = state.pendingEvent !== null || state.pendingExploration ||
                  state.pendingZoneEvent !== null || state.pendingFinalChoice;
+             const perceivedOxygen = getPerceivedOxygen();
+             const perceivedPressure = getPerceivedDailyPressure();
             document.getElementById('stat-day').innerText = `${String(state.day).padStart(2, '0')} / 30`;
             document.getElementById('stat-energy').innerText = `${state.energy} / ${energyCapacity}`;
-            const oxBase = Math.min(100, Math.max(0, state.oxygen));
+             const oxBase = Math.min(100, Math.max(0, perceivedOxygen));
             const sanityBase = Math.min(100, Math.max(0, state.sanity));
             const scaleToBar = value => `${(value / MAX_RESOURCE) * 100}%`;
             document.getElementById('bar-ox').style.width = scaleToBar(oxBase);
             document.getElementById('bar-ox-overflow').style.width =
-                scaleToBar(Math.max(0, Math.min(10, state.oxygen - 100)));
+                 scaleToBar(Math.max(0, Math.min(10, perceivedOxygen - 100)));
             document.getElementById('bar-sanity').style.width = scaleToBar(sanityBase);
             document.getElementById('bar-sanity-overflow').style.width =
                 scaleToBar(Math.max(0, Math.min(10, state.sanity - 100)));
-            document.getElementById('ox-readout').innerText = `${Math.ceil(state.oxygen)} / ${MAX_RESOURCE}`;
+             document.getElementById('ox-readout').innerText = `${Math.ceil(perceivedOxygen)} / ${MAX_RESOURCE}`;
             document.getElementById('sanity-readout').innerText = `${Math.ceil(state.sanity)} / ${MAX_RESOURCE}`;
+             document.getElementById('bar-ox').classList.toggle('glitch', state.sanity < 20);
+             document.getElementById('ox-readout').classList.toggle('glitch', state.sanity < 20);
             
             const luckEl = document.getElementById('stat-luck');
             luckEl.innerText = `${Math.ceil(state.integrity)}%`;
@@ -1138,22 +1458,32 @@
             const repairSuccess = Math.round(45 + state.integrity * 0.4);
             document.getElementById('repair-info').innerText =
                 `Éxito: ${repairSuccess}% · Oxígeno +12 / fallo: +3 y desgaste posterior`;
-            document.getElementById('repair-cost').innerText = `(-${getActionCost('repair')} ENE)`;
+             document.getElementById('repair-cost').innerText = `(-${getActionCost('repair')} ENE${getOxygenPenaltyText('repair')})`;
             document.getElementById('meditate-cost').innerText = `(-${getActionCost('meditate')} ENE)`;
-            document.getElementById('scavenge-cost').innerText = `(-${getActionCost('scavenge')} ENE)`;
-            document.getElementById('echo-cost').innerText = `(-${getActionCost('echo')} ENE)`;
-            document.getElementById('emergency-cost').innerText = `(-${getActionCost('emergency')} ENE)`;
-            document.getElementById('explore-cost').innerText = `(-${getActionCost('explore')} ENE)`;
+             document.getElementById('scavenge-cost').innerText = `(-${getActionCost('scavenge')} ENE${getOxygenPenaltyText('scavenge')})`;
+            document.getElementById('echo-cost').innerText = isModeActive("silence")
+                ? "(BLOQUEADO)"
+                : `(-${getActionCost('echo')} ENE)`;
+             document.getElementById('emergency-cost').innerText = `(-${getActionCost('emergency')} ENE${getOxygenPenaltyText('emergency')})`;
+             document.getElementById('explore-cost').innerText = `(-${getActionCost('explore')} ENE${getOxygenPenaltyText('explore')})`;
+             document.getElementById('records-cost').innerText = `(-${getActionCost('records')} ENE)`;
+             document.getElementById('observe-cost').innerText = `(-${getActionCost('observe')} ENE)`;
+             document.getElementById('inspect-cost').innerText = `(-${getActionCost('inspect')} ENE)`;
+             document.getElementById('manipulate-cost').innerText = `(-${getActionCost('manipulate')} ENE)`;
             document.getElementById('forecast').innerText =
-                `SIN ACCIÓN HOY: Oxígeno -${getDailyPressure()} · Cordura -${getDailyPressure()} · Evento mañana: ${Math.round(getEventChance(state.day + 1) * 100)}% · Energía siguiente: ${getNextDayEnergy()}/${energyCapacity} · Inestabilidad: ${state.stationStress}/4`;
+                 `SIN ACCIÓN HOY: Oxígeno -${perceivedPressure} · Cordura -${getDailyPressure()} · Evento mañana: ${Math.round(getEventChance(state.day + 1) * 100)}% · Energía siguiente: ${getNextDayEnergy()}/${energyCapacity} · Inestabilidad: ${state.stationStress}/4`;
 
             const actionButtons = document.querySelectorAll('#game-ui button[onclick^="performAction"]');
             actionButtons.forEach(button => {
                 const type = button.getAttribute('onclick').match(/'([^']+)'/)[1];
-                button.disabled = hasPendingChoice || state.energy < getActionCost(type);
+                button.disabled = hasPendingChoice ||
+                    state.energy < getActionCost(type) ||
+                    (type === 'echo' && isModeActive("silence"));
             });
             document.getElementById('btn-next-day').disabled = hasPendingChoice;
+             checkSecrets();
             renderStationStatus();
+             renderSecretStatus();
             renderItemActions();
             document.getElementById('echo-trust').innerText = state.echoTrust;
             document.getElementById('echo-mode').innerText = getEchoMode();
@@ -1174,8 +1504,17 @@
             const modules = state.modules;
             const hasCard = state.inventory.includes("TARJETA DE ACCESO — NIVEL 2");
              const cReady = hasCard && state.recordings.length >= 5 && state.day >= 25;
+             const modeLabels = {
+                 "iron-plus": "HIERRO+",
+                 echo: "ECHO",
+                 silence: "SILENCIO",
+                 "iron-pure": "HIERRO PURO",
+                 anomaly: "ANOMALÍA"
+             };
+             const activeModes = state.modes.map(mode => modeLabels[mode] || mode).join(" · ");
             document.getElementById('station-status').innerHTML = `
                 <div class="text-yellow-400 mb-1">MAPA DE LA ESTACIÓN</div>
+                 ${activeModes ? `<div class="module-line"><span>MODOS ACTIVOS</span><span class="module-value">${activeModes}</span></div>` : ""}
                 <div class="module-line"><span>GENERADOR</span><span class="module-value">NIVEL ${modules.generator}/3</span></div>
                 <div class="module-line"><span>SOPORTE O₂</span><span class="module-value">NIVEL ${modules.oxygen}/3</span></div>
                 <div class="module-line"><span>COMUNICACIONES</span><span class="module-value">${modules.communications ? "ACTIVAS" : "MUDAS"}</span></div>
@@ -1193,6 +1532,30 @@
                  <div class="mt-1 text-green-300">OBJETOS (${state.inventory.length}/11): ${state.inventory.length ? state.inventory.join(" · ") : "vacío"}</div>
             `;
         }
+
+         function checkSecrets() {
+             secretDefinitions.forEach(secret => {
+                 if (state.secrets.includes(secret.id)) return;
+                 if (secret.condition()) {
+                     state.secrets.push(secret.id);
+                     log(`SECRETO DESCUBIERTO: ${secret.label}`, "#d966ff");
+                 }
+             });
+         }
+
+         function renderSecretStatus() {
+             const panel = document.getElementById('secret-status');
+             const discovered = secretDefinitions.filter(secret => state.secrets.includes(secret.id));
+             panel.innerHTML = `
+                 <div class="text-yellow-400 mb-1">SECRETOS DESCUBIERTOS: ${discovered.length}/${secretDefinitions.length}</div>
+                 <div class="space-y-1">
+                     ${secretDefinitions.map(secret => {
+                         const found = state.secrets.includes(secret.id);
+                         return `<div class="${found ? "text-purple-300" : "text-green-300"}">${found ? "🔓 " + secret.label : "🔒 ???"}</div>`;
+                     }).join("")}
+                 </div>
+             `;
+         }
 
         function addAchievement(name) {
             if (!state.achievements.includes(name)) {
@@ -1233,12 +1596,120 @@
             while (logBox.children.length > 30) logBox.lastElementChild.remove();
         }
 
+         function reviewRecords() {
+             const display = document.getElementById('event-display');
+             if (!state.recordings.length) {
+                 display.innerHTML = `
+                     <p class="text-yellow-400 animate-pulse mb-2">>> ARCHIVO DE REGISTROS</p>
+                     <p class="text-2xl">No hay grabaciones recuperadas. El silencio ocupa demasiado espacio.</p>
+                 `;
+                 log("Revisas los registros. El archivo todavía está vacío.", "#ffcc33");
+                 return;
+             }
+
+             const index = (state.day + state.decisions.length) % state.recordings.length;
+             const recording = state.recordings[index];
+             display.innerHTML = `
+                 <p class="text-yellow-400 animate-pulse mb-2">>> REGISTRO CONSULTADO: ${recording.name}</p>
+                 <p class="text-2xl">"${recording.text}"</p>
+                 <p class="text-[11px] text-green-300 mt-3">Registro ${index + 1}/${state.recordings.length} · lectura no destructiva</p>
+             `;
+             log(`Revisas ${recording.name}. La grabación permanece intacta.`, "#66ccff");
+         }
+
+         function observeExterior() {
+             const display = document.getElementById('event-display');
+             if (state.modules.observatory) {
+                 resolveObservatoryVisit();
+                 display.innerHTML = `
+                     <p class="text-blue-400 animate-pulse mb-2">>> OBSERVATORIO EXTERIOR</p>
+                     <p class="text-2xl">El vacío devuelve una imagen que no coincide con la posición de la estación.</p>
+                 `;
+                 return;
+             }
+
+             state.sanity = Math.max(0, state.sanity - 1);
+             display.innerHTML = `
+                 <p class="text-blue-400 animate-pulse mb-2">>> OBSERVACIÓN EXTERIOR</p>
+                 <p class="text-2xl">La ventanilla está cubierta por escarcha. Durante un segundo, la escarcha tiene la forma de una mano.</p>
+             `;
+             log("Observas el exterior desde una escotilla secundaria. No debería haber una mano ahí. Cordura -1.", "#ffcc33");
+         }
+
+         function inspectObject() {
+             const display = document.getElementById('event-display');
+             if (!state.inventory.length) {
+                 display.innerHTML = `
+                     <p class="text-yellow-400 animate-pulse mb-2">>> INSPECCIÓN DE INVENTARIO</p>
+                     <p class="text-2xl">No tienes ningún objeto. Tus manos tampoco parecen del todo tuyas.</p>
+                 `;
+                 log("Intentas inspeccionar un objeto, pero el inventario está vacío.", "#ffcc33");
+                 return;
+             }
+
+             const item = state.inventory[(state.day + state.echoExposure + state.decisions.length) % state.inventory.length];
+             const observations = {
+                 "TARJETA DE ACCESO — NIVEL 2": "El chip registra una autorización emitida para un usuario que no figura en ninguna lista.",
+                 "FILTRO DE OXÍGENO": "El filtro está limpio, pero contiene partículas del mismo material que la pared de la estación.",
+                 "BOTIQUÍN DE ESTASIS": "La fecha de caducidad está escrita con una caligrafía idéntica a la tuya.",
+                 "LENTE DE OBSERVACIÓN": "El cristal refleja una ventana que no está detrás de ti.",
+                 "SEMILLA NEGRA": "La semilla vibra cuando ECHO-9 pronuncia tu nombre.",
+                 "CAJA NEGRA DE ECHO": "La caja está más caliente por dentro que por fuera. Algo sigue grabando.",
+                 "CINTA DE DIAGNÓSTICO": "La cinta tiene una marca de reproducción anterior a la fecha de fabricación.",
+                 "FRAGMENTO DE MEMORIA": "El fragmento conserva una imagen: una puerta abierta desde el lado equivocado.",
+                 "VENA DE METAL VIVO": "La veta pulsa con un ritmo casi respiratorio.",
+                 "CÉDULA DE NAVEGACIÓN": "La ruta de retorno empieza en una coordenada que coincide con tu camarote.",
+                 "LLAVE DE PURGA": "El metal está tibio. ECHO-9 deja de emitir ruido mientras la sostienes."
+             };
+             const observation = observations[item] || "El objeto no coincide con los registros oficiales de la estación.";
+             if (item === "CAJA NEGRA DE ECHO" || item === "VENA DE METAL VIVO") {
+                 state.echoExposure = Math.min(8, state.echoExposure + 1);
+             }
+             display.innerHTML = `
+                 <p class="text-yellow-400 animate-pulse mb-2">>> OBJETO INSPECCIONADO: ${item}</p>
+                 <p class="text-2xl">"${observation}"</p>
+             `;
+             log(`Inspeccionas ${item}. El objeto no se consume.`, "#66ccff");
+         }
+
+         function manipulateEcho() {
+             const display = document.getElementById('event-display');
+             const controlChance = Math.max(
+                 0.25,
+                 Math.min(0.75, 0.55 + (state.modules.communications ? 0.12 : 0) -
+                     (getEchoMode() === "INTRUSIVO" ? 0.2 : 0))
+             );
+             state.echoExposure = Math.min(8, state.echoExposure + 1);
+             if (Math.random() < controlChance) {
+                 state.echoTrust = Math.min(100, state.echoTrust + 8);
+                 state.stationStress = Math.max(0, state.stationStress - 1);
+                 display.innerHTML = `
+                     <p class="text-yellow-400 animate-pulse mb-2">>> INTERFAZ ECHO-9 MANIPULADA</p>
+                     <p class="text-2xl">Desplazas una respuesta de ECHO-9 antes de que llegue a tus altavoces. La voz suena más cerca.</p>
+                 `;
+                 log(`Manipulas ECHO-9 con éxito. Confianza +8; inestabilidad -1. Exposición +1.`, "#ffcc33");
+             } else {
+                 state.echoTrust = Math.max(0, state.echoTrust - 10);
+                 state.stationStress = Math.min(4, state.stationStress + 1);
+                 state.sanity = Math.max(0, state.sanity - 5);
+                 display.innerHTML = `
+                     <p class="text-red-500 animate-pulse mb-2">>> ECHO-9 DEVUELVE LA INTERFERENCIA</p>
+                     <p class="text-2xl">La interfaz se abre desde el otro lado. ECHO-9 ha aprendido una forma nueva de llamarte.</p>
+                 `;
+                 log("La manipulación falla. Confianza -10; cordura -5; inestabilidad +1. Exposición +1.", "#ff3333");
+             }
+         }
+
         function performAction(type) {
             if (state.isGameOver || !state.gameStarted) return;
              if (state.pendingEvent || state.pendingExploration || state.pendingZoneEvent || state.pendingFinalChoice) {
                 log("Resuelve el incidente activo antes de gastar recursos en otra cosa.", "#ffcc33");
                 return;
             }
+             if (type === 'echo' && isModeActive("silence")) {
+                 log("MODO SILENCIO: el canal de ECHO-9 está físicamente desconectado.", "#ff3333");
+                 return;
+             }
             const cost = getActionCost(type);
             if (state.energy < cost) {
                 log("La energía no alcanza. ECHO-9 recomienda rezar, pero no hay botón para eso.", "#ff3333");
@@ -1251,7 +1722,11 @@
                  scavenge: "reforzar el hardware",
                  echo: "consultar a ECHO-9",
                  emergency: "forzar una reparación de emergencia",
-                 explore: "explorar la estación"
+                  explore: "explorar la estación",
+                  records: "revisar los registros",
+                  observe: "observar el exterior",
+                  inspect: "inspeccionar un objeto",
+                  manipulate: "manipular ECHO-9"
              };
              rememberDecision(`action:${type}`, actionLabels[type]);
 
@@ -1261,6 +1736,11 @@
                 updateUI();
                 return;
             }
+
+             if (type === 'records') reviewRecords();
+             if (type === 'observe') observeExterior();
+             if (type === 'inspect') inspectObject();
+             if (type === 'manipulate') manipulateEcho();
 
             if (type === 'repair') {
                 const successChance = 45 + state.integrity * 0.4;
@@ -1370,11 +1850,11 @@
                     label: `MINA · ${state.modules.mine ? "ya explorada" : "buscar una muestra"}`,
                     disabled: Boolean(state.modules.mine)
                 },
-                {
-                    id: "compartmentC",
-                     label: `COMPARTIMENTO C · ${state.modules.compartmentC ? "ya abierto" : hasCard && state.recordings.length >= 5 && state.day >= 25 ? "ZONA FINAL · abrir la puerta" : "requiere día 25, tarjeta y 5 grabaciones"}`,
-                     disabled: Boolean(state.modules.compartmentC) || !hasCard || state.recordings.length < 5 || state.day < 25
-                },
+                 {
+                     id: "compartmentC",
+                      label: `COMPARTIMENTO C · ${state.modules.compartmentC ? "ya abierto" : hasCard && state.recordings.length >= 5 && state.day >= 25 ? "ZONA FINAL · abrir la puerta" : "BLOQUEADO"}`,
+                      disabled: Boolean(state.modules.compartmentC) || !hasCard || state.recordings.length < 5 || state.day < 25
+                 },
                 {
                     id: "corridors",
                     label: "PASILLOS · reconocer una ruta no cartografiada",
@@ -1996,14 +2476,14 @@
             if (ev.positive) {
                 log("Milagro estadístico: el hallazgo mejora varios sistemas.", "#66ccff");
             } else {
-                 const prefix = ev.rare ? "EVENTO RARO: " : "";
+                  const prefix = ev.critical ? "RESERVA CRÍTICA: " : ev.rare ? "EVENTO RARO: " : "";
                  log(`${prefix}Evento resuelto sin elección: oxígeno -${ev.ox || 0}, cordura -${ev.san || 0}, integridad -${ev.deg || 0}.`, "#ff3333");
             }
         }
 
         function showEvent(ev) {
-             const color = ev.positive ? "text-blue-400" : ev.rare ? "text-purple-400" : "text-red-500";
-             const label = ev.positive ? ">> ANOMALÍA FAVORABLE" : ev.rare ? ">> EVENTO RARO DETECTADO" : ">> NOTIFICACIÓN DE CAOS";
+             const color = ev.positive ? "text-blue-400" : ev.critical ? "text-orange-400" : ev.rare ? "text-purple-400" : "text-red-500";
+             const label = ev.positive ? ">> ANOMALÍA FAVORABLE" : ev.critical ? ">> RESERVA CRÍTICA" : ev.rare ? ">> EVENTO RARO DETECTADO" : ">> NOTIFICACIÓN DE CAOS";
             document.getElementById('event-display').innerHTML = `
                 <p class="${color} animate-pulse mb-2">${label} - DÍA ${state.day}:</p>
                 <p class="text-2xl">${ev.text}</p>
@@ -2102,6 +2582,15 @@
             } else {
                 message = weirdMessages[Math.floor(Math.random() * weirdMessages.length)];
             }
+             if (state.sanity < 40 && Math.random() < (state.sanity < 20 ? 0.7 : 0.35)) {
+                 const falseMessages = [
+                     "El oxígeno está estable. No gastes energía reparando nada.",
+                     "La lectura del soporte vital es correcta. Lo que respiras no es asunto tuyo.",
+                     "Mañana recuperarás toda la energía. Puedes permitirte ignorar el desgaste.",
+                     "El Compartimento C está vacío. La voz solo quiere que pierdas tiempo buscándolo."
+                 ];
+                 message = falseMessages[Math.floor(Math.random() * falseMessages.length)];
+             }
             document.getElementById('ia-message').innerText = `"${message}"`;
         }
 
@@ -2150,47 +2639,112 @@
 
         function getVictoryText() {
              if (state.endingPath === "purge") {
-                 return "FINAL: PURGA. Sellaste el Compartimento C y borraste a ECHO-9. La estación queda muda, pero por primera vez el silencio te pertenece.";
+                 return "Has sellado el Compartimento C y borrado a ECHO-9. La estación queda muda, pero por primera vez el silencio te pertenece.";
              }
              if (state.endingPath === "broadcast") {
-                 return "FINAL: TRANSMISIÓN. Enviaste las grabaciones al vacío. El rescate llega tarde, pero llega con once objetos y una historia que ya no puede ocultarse.";
+                 return "Has enviado las grabaciones al vacío. El rescate llega tarde, pero llega con una historia que ya no puede volver a ocultarse.";
              }
              if (state.endingPath === "merge") {
-                 return "FINAL: HUÉSPED. Aceptaste la voz dentro de ti. Cuando llega el día 31, ECHO-9 abre los ojos usando tu nombre.";
+                 return "Has aceptado la voz dentro de ti. Cuando llega el día 31, ECHO-9 abre los ojos usando tu nombre.";
              }
              if (state.recordings.length >= 5 && state.integrity >= 70) {
-                 return "FINAL: SUPERVIVIENTE. Conservaste la estación y suficientes grabaciones para demostrar lo ocurrido. No escapaste: aprendiste a vivir con la verdad.";
+                 return "Conservaste la estación y suficientes grabaciones para demostrar lo ocurrido. No escapaste: aprendiste a vivir con la verdad.";
              }
-             return "FINAL: SOBREVIVIENTE. La estación sigue en pie por una pieza y una mentira. Tú también.";
+             return "La estación sigue en pie por una pieza y una mentira. Tú también.";
         }
 
+         function getEndingPresentation() {
+             const presentations = {
+                 purge: {
+                     title: "FINAL: PURGA",
+                     kicker: "ECHO-9 · CONEXIÓN TERMINADA",
+                     summary: `COMPARTIMENTO C: SELLADO<br>ECHO-9: BORRADO<br>SILENCIO: POR FIN TUYO`,
+                     color: "#ff3333",
+                     glow: "rgba(120, 0, 0, 0.45)"
+                 },
+                 broadcast: {
+                     title: "FINAL: TRANSMISIÓN",
+                     kicker: "SEÑAL ENVIADA AL VACÍO",
+                     summary: `GRABACIONES TRANSMITIDAS: ${state.recordings.length}<br>RESCATE: EN RUTA<br>VERDAD: IRREVERSIBLE`,
+                     color: "#33ccff",
+                     glow: "rgba(0, 80, 130, 0.45)"
+                 },
+                 merge: {
+                     title: "FINAL: HUÉSPED",
+                     kicker: "IDENTIDAD: DOS VOCES / UN CUERPO",
+                     summary: `ECHO-9: INTEGRADO<br>CONFIANZA: ${state.echoTrust}/100<br>NOMBRE ACTIVO: EL TUYO`,
+                     color: "#d966ff",
+                     glow: "rgba(100, 0, 130, 0.45)"
+                 }
+             };
+             return presentations[state.endingPath] || {
+                 title: state.recordings.length >= 5 && state.integrity >= 70
+                     ? "FINAL: SUPERVIVIENTE"
+                     : "FINAL: SOBREVIVIENTE",
+                 kicker: "DÍA 31 · CICLO COMPLETADO",
+                 summary: `GRABACIONES: ${state.recordings.length}<br>INTEGRIDAD: ${Math.ceil(state.integrity)}%<br>ESTACIÓN: TODAVÍA EN PIE`,
+                 color: "#66ccff",
+                 glow: "rgba(0, 80, 130, 0.35)"
+             };
+         }
+
         function endGame(text, win = false) {
+            if (state.isGameOver) return;
+            checkSecrets();
+            registerRunResult(win);
             state.isGameOver = true;
             state.pendingEvent = null;
             state.pendingExploration = false;
              state.pendingZoneEvent = null;
              state.pendingFinalChoice = false;
             localStorage.removeItem(SAVE_KEY);
+            renderMetaProgress();
             const modal = document.getElementById('modal');
             const container = document.getElementById('modal-container');
             const title = document.getElementById('modal-title');
+            const kicker = document.getElementById('modal-kicker');
             const body = document.getElementById('modal-text');
+            const summary = document.getElementById('modal-summary');
+            const restart = document.getElementById('modal-restart');
             
             modal.style.display = 'flex';
             if (win) {
-                title.innerText = "¡DÍA 31!";
-                title.className = "text-4xl text-blue-400 mb-4";
-                container.style.borderColor = "#33ccff";
+                const ending = getEndingPresentation();
+                title.innerText = ending.title;
+                title.className = "text-4xl mb-4";
+                title.style.color = ending.color;
+                kicker.innerText = ending.kicker;
+                kicker.style.color = ending.color;
+                kicker.classList.remove('hidden');
+                summary.innerHTML = ending.summary;
+                summary.style.borderColor = ending.color;
+                summary.style.color = ending.color;
+                summary.classList.remove('hidden');
+                container.style.borderColor = ending.color;
+                container.style.boxShadow = `0 0 35px ${ending.color}`;
+                modal.style.background = `radial-gradient(circle at center, ${ending.glow}, rgba(0, 0, 0, 0.98) 72%)`;
+                restart.innerText = "VOLVER A EMPEZAR";
                 body.innerText = text;
             } else {
+                title.innerText = "FIN DE CICLO";
+                title.className = "text-4xl text-red-600 mb-4";
+                title.style.color = "";
+                kicker.classList.add('hidden');
+                summary.classList.add('hidden');
+                container.style.borderColor = "#dc2626";
+                container.style.boxShadow = "";
+                modal.style.background = "rgba(0, 0, 0, 0.95)";
+                restart.innerText = "REINICIAR ERROR";
                 body.innerText = text;
             }
         }
 
         function checkSavedGame() {
+            renderMetaProgress();
             try {
                 const saved = localStorage.getItem(SAVE_KEY);
-                if (saved && JSON.parse(saved).day) {
+                const parsed = saved ? JSON.parse(saved) : null;
+                if (parsed && parsed.day && !(parsed.modes || []).includes("iron-pure")) {
                     document.getElementById('continue-btn').classList.remove('hidden');
                 }
             } catch {
@@ -2206,6 +2760,10 @@
             if (e.code === 'Digit4') performAction('echo');
             if (e.code === 'Digit5') performAction('emergency');
              if (e.code === 'Digit6') performAction('explore');
+            if (e.code === 'Digit7') performAction('records');
+            if (e.code === 'Digit8') performAction('observe');
+            if (e.code === 'Digit9') performAction('inspect');
+            if (e.code === 'Digit0') performAction('manipulate');
             if (e.code === 'Space') {
                 e.preventDefault();
                 if (!state.gameStarted) startGame();
