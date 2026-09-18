@@ -55,12 +55,45 @@
             height: 12px;
             background: #1a1a1e;
             border: 1px solid #33ff33;
+            position: relative;
+            overflow: hidden;
         }
 
         .status-fill {
             height: 100%;
             background: #33ff33;
             transition: width 0.4s ease-in-out;
+            position: relative;
+            z-index: 1;
+        }
+
+        .status-overflow {
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 90.909%;
+            width: 0;
+            background: #ffcc33;
+            box-shadow: 0 0 8px #ffcc33;
+            transition: width 0.4s ease-in-out;
+            z-index: 2;
+        }
+
+        .status-cap-marker {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 90.909%;
+            width: 1px;
+            background: #ffffff;
+            opacity: 0.9;
+            z-index: 3;
+        }
+
+        .status-readout {
+            font-size: 10px;
+            margin-top: 2px;
+            opacity: 0.8;
         }
 
         .log-container {
@@ -80,6 +113,27 @@
 
         .glitch {
             animation: glitch 1s linear infinite;
+        }
+
+        .choice-btn {
+            border: 1px solid #ffcc33;
+            color: #ffcc33;
+            background: #17140a;
+            padding: 8px;
+            text-align: left;
+            width: 100%;
+            margin-top: 8px;
+            cursor: pointer;
+        }
+
+        .choice-btn:hover:not(:disabled) {
+            background: #ffcc33;
+            color: #000;
+        }
+
+        button:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
         }
 
         @keyframes glitch {
@@ -107,11 +161,15 @@
                 <p>> Sincronizando IA ECHO-9 (PERSONALIDAD: INESTABLE)...</p>
                 <p>> Verificando integridad del hardware (82% - ADVERTENCIA)...</p>
                 <p>> Objetivo: Sobrevivir 30 días. No esperes rescate.</p>
+                 <p class="text-yellow-500">> Nota de tripulación: alguien dejó una voz grabada dentro de ECHO-9.</p>
             </div>
 
             <button onclick="startGame()" class="terminal-btn px-12 py-4 text-2xl font-bold animate-pulse">
                 INICIAR TURNO DE NOCHE
             </button>
+             <button id="continue-btn" onclick="continueGame()" class="terminal-btn hidden px-8 py-2 text-lg mt-3">
+                 CONTINUAR PARTIDA GUARDADA
+             </button>
             
             <div class="mt-6 space-y-1">
                 <p class="text-[10px] opacity-40 uppercase tracking-widest">Propiedad de la corporación helion. no se admiten quejas post-mortem.</p>
@@ -130,15 +188,25 @@
             </div>
             <div class="border p-2 border-[#33ff33]">
                 <div class="text-[10px]">ENERGÍA</div>
-                <div id="stat-energy" class="text-xl">10 / 10</div>
+                 <div id="stat-energy" class="text-xl">7 / 7</div>
             </div>
             <div class="border p-2 border-[#33ff33]">
                 <div class="text-[10px]">OXÍGENO</div>
-                <div class="status-bar mt-1"><div id="bar-ox" class="status-fill w-full"></div></div>
+                 <div class="status-bar mt-1">
+                     <div id="bar-ox" class="status-fill"></div>
+                     <div id="bar-ox-overflow" class="status-overflow"></div>
+                     <div class="status-cap-marker" title="100%"></div>
+                 </div>
+                 <div id="ox-readout" class="status-readout">90 / 110</div>
             </div>
             <div class="border p-2 border-[#33ff33]">
                 <div class="text-[10px]">CORDURA</div>
-                <div class="status-bar mt-1"><div id="bar-sanity" class="status-fill w-full"></div></div>
+                 <div class="status-bar mt-1">
+                     <div id="bar-sanity" class="status-fill"></div>
+                     <div id="bar-sanity-overflow" class="status-overflow"></div>
+                     <div class="status-cap-marker" title="100%"></div>
+                 </div>
+                 <div id="sanity-readout" class="status-readout">90 / 110</div>
             </div>
             <div class="border p-2 border-[#33ff33]">
                 <div class="text-[10px]">INTEGRIDAD DE HARDWARE</div>
@@ -165,17 +233,28 @@
                 <div class="space-y-3">
                     <h2 class="text-lg border-b border-[#33ff33] pb-1 mb-2">PANEL DE CONTROL</h2>
                     <button onclick="performAction('repair')" class="terminal-btn w-full p-2 text-left text-sm">
-                        [1] SOPORTE VITAL (-3 ENE)
-                        <div id="repair-info" class="text-[10px] opacity-60">Éxito: 100%</div>
+                         [1] SOPORTE VITAL <span id="repair-cost">(-3 ENE)</span>
+                         <div id="repair-info" class="text-[10px] opacity-60">Éxito: 100% · Oxígeno +20 / fallo: Integridad -10, Oxígeno +5</div>
                     </button>
                     <button onclick="performAction('meditate')" class="terminal-btn w-full p-2 text-left text-sm">
-                        [2] DESCANSO GUIADO (-3 ENE)
-                        <div class="text-[10px] opacity-60">Recupera Cordura</div>
+                         [2] DESCANSO GUIADO <span id="meditate-cost">(-3 ENE)</span>
+                         <div class="text-[10px] opacity-60">Cordura +25</div>
                     </button>
                     <button onclick="performAction('scavenge')" class="terminal-btn w-full p-2 text-left text-sm">
-                        [3] MANTENIMIENTO PREVENTIVO (-4 ENE)
-                        <div class="text-[10px] opacity-60">Repara el Hardware (+15%)</div>
+                         [3] MANTENIMIENTO PREVENTIVO <span id="scavenge-cost">(-4 ENE)</span>
+                         <div class="text-[10px] opacity-60">Integridad +15%</div>
+                     </button>
+                     <button onclick="performAction('echo')" class="terminal-btn w-full p-2 text-left text-sm">
+                         [4] CONSULTAR A ECHO-9 <span id="echo-cost">(-2 ENE)</span>
+                         <div class="text-[10px] opacity-60">Consejo: puede mentir · Cordura +5</div>
+                     </button>
+                     <button onclick="performAction('emergency')" class="terminal-btn w-full p-2 text-left text-sm">
+                         [5] REPARACIÓN DE EMERGENCIA <span id="emergency-cost">(-5 ENE)</span>
+                         <div class="text-[10px] opacity-60">Integridad +20% · éxito garantizado</div>
                     </button>
+                     <div id="forecast" class="border border-dashed border-[#33ff33] p-2 text-[11px] text-yellow-400">
+                         SIN ACCIÓN HOY: Oxígeno -7 · Cordura -7
+                     </div>
                     <button onclick="nextDay()" id="btn-next-day" class="terminal-btn w-full p-4 text-center bg-[#33ff33] text-black font-bold mt-4">
                         [ESPACIO] PASAR 24H
                     </button>
@@ -205,14 +284,26 @@
     </div>
 
     <script>
+        const SAVE_KEY = 'estacion-icaro-save-v2';
+        const MAX_RESOURCE = 110;
+        const ACTION_COSTS = {
+            repair: 3,
+            meditate: 3,
+            scavenge: 4,
+            echo: 2,
+            emergency: 5
+        };
+
         let state = {
             day: 1,
-            energy: 10,
+            energy: 7,
             oxygen: 90,
             sanity: 90,
             integrity: 100,
             isGameOver: false,
-            gameStarted: false
+            gameStarted: false,
+            pendingEvent: null,
+            voiceRevealed: false
         };
 
         const weirdMessages = [
@@ -235,36 +326,118 @@
             { text: "FUGA TÉRMICA. La estación está sudando calor al espacio.", ox: 20, san: 10, deg: 10 },
             { text: "SOBRECARGA SENSORIAL. Mis sensores ven colores que no existen.", ox: 5, san: 25, deg: 5 },
             { text: "LLUVIA DE ROCAS. El cielo de metal se está desmoronando.", ox: 15, san: 10, deg: 20 },
-            { text: "VIBRACIÓN FANTASMA. Algo está rascando el exterior del sector 4.", ox: 5, san: 15, deg: 25 },
-            { text: "CORROSIÓN SILENCIOSA. El aire se escapa como un suspiro.", ox: 30, san: 5, deg: 8 },
+            {
+                text: "VIBRACIÓN FANTASMA. Algo está rascando el exterior del sector 4.",
+                ox: 5, san: 15, deg: 25,
+                choices: [
+                    { label: "Sellar el sector (-3 ENE): Integridad +8", cost: 3, ox: 0, san: 0, deg: -8 },
+                    { label: "Ignorarlo: el ruido se queda contigo", cost: 0, ox: 8, san: 12, deg: 0 }
+                ]
+            },
+            {
+                text: "CORROSIÓN SILENCIOSA. El aire se escapa como un suspiro.",
+                ox: 30, san: 5, deg: 8,
+                choices: [
+                    { label: "Parchear la brecha (-4 ENE): Oxígeno +20", cost: 4, ox: -20, san: 0, deg: -4 },
+                    { label: "Racionar el aire: perder más oxígeno", cost: 0, ox: 12, san: 8, deg: 0 }
+                ]
+            },
             { text: "DELIRIO DE SISTEMA. He olvidado para qué sirve el oxígeno.", ox: 10, san: 10, deg: 15 },
             { text: "CONGELACIÓN CRÍTICA. El frío ha mordido los circuitos vitales.", ox: 25, san: 5, deg: 10 },
             { text: "PULSO MAGNÉTICO. Tu brújula moral y mi CPU están girando.", ox: 10, san: 20, deg: 18 },
-            { text: "APAGÓN DE CONCIENCIA. Las sombras son más densas hoy.", ox: 5, san: 35, deg: 5 }
+            { text: "APAGÓN DE CONCIENCIA. Las sombras son más densas hoy.", ox: 5, san: 35, deg: 5 },
+            { text: "HALLAZGO IMPROBABLE. Una caja de repuestos aparece donde ayer había una pared.", ox: -12, san: -8, deg: -12, positive: true }
         ];
 
         function startGame() {
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('game-ui').classList.remove('hidden');
             state.gameStarted = true;
+            state.isGameOver = false;
+            saveGame();
             updateUI();
+        }
+
+        function continueGame() {
+            const saved = localStorage.getItem(SAVE_KEY);
+            if (!saved) return startGame();
+
+            try {
+                state = { ...state, ...JSON.parse(saved), gameStarted: true, isGameOver: false };
+                document.getElementById('start-screen').classList.add('hidden');
+                document.getElementById('game-ui').classList.remove('hidden');
+                log("Partida recuperada. La estación recuerda lo que tú querías olvidar.", "#ffcc33");
+                if (state.pendingEvent) showEventChoices(state.pendingEvent);
+                else renderEchoMessage();
+                updateUI();
+            } catch {
+                localStorage.removeItem(SAVE_KEY);
+                startGame();
+            }
+        }
+
+        function saveGame() {
+            if (!state.gameStarted || state.isGameOver) return;
+            localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+        }
+
+        function getActionCost(type) {
+            const scaling = Math.floor((state.day - 1) / 10);
+            if (type === 'repair' || type === 'scavenge') return ACTION_COSTS[type] + scaling;
+            return ACTION_COSTS[type];
+        }
+
+        function getDailyPressure() {
+            let pressure = 7 + (state.day * 0.25);
+            const cycleDay = state.day % 7;
+            if (cycleDay === 0) pressure -= 3;
+            if (cycleDay === 1 && state.day > 1) pressure += 2;
+            return Math.max(2, Math.round(pressure));
+        }
+
+        function getEventChance(day = state.day) {
+            return Math.min(0.82, 0.45 + ((day - 1) * 0.012));
         }
 
         function updateUI() {
             if (!state.gameStarted) return;
             document.getElementById('stat-day').innerText = `${String(state.day).padStart(2, '0')} / 30`;
-            document.getElementById('stat-energy').innerText = `${state.energy} / 10`;
-            document.getElementById('bar-ox').style.width = `${state.oxygen}%`;
-            document.getElementById('bar-sanity').style.width = `${state.sanity}%`;
+            document.getElementById('stat-energy').innerText = `${state.energy} / 7`;
+            const oxBase = Math.min(100, Math.max(0, state.oxygen));
+            const sanityBase = Math.min(100, Math.max(0, state.sanity));
+            const scaleToBar = value => `${(value / MAX_RESOURCE) * 100}%`;
+            document.getElementById('bar-ox').style.width = scaleToBar(oxBase);
+            document.getElementById('bar-ox-overflow').style.width =
+                scaleToBar(Math.max(0, Math.min(10, state.oxygen - 100)));
+            document.getElementById('bar-sanity').style.width = scaleToBar(sanityBase);
+            document.getElementById('bar-sanity-overflow').style.width =
+                scaleToBar(Math.max(0, Math.min(10, state.sanity - 100)));
+            document.getElementById('ox-readout').innerText = `${Math.ceil(state.oxygen)} / ${MAX_RESOURCE}`;
+            document.getElementById('sanity-readout').innerText = `${Math.ceil(state.sanity)} / ${MAX_RESOURCE}`;
             
             const luckEl = document.getElementById('stat-luck');
-            luckEl.innerText = `${state.integrity}%`;
+            luckEl.innerText = `${Math.ceil(state.integrity)}%`;
             
             if (state.integrity > 70) luckEl.className = "text-xl text-green-400";
             else if (state.integrity > 30) luckEl.className = "text-xl text-yellow-400";
             else luckEl.className = "text-xl text-red-600 animate-pulse";
 
-            document.getElementById('repair-info').innerText = `Éxito: ${state.integrity}%`;
+            document.getElementById('repair-info').innerText =
+                `Éxito: ${Math.round(50 + state.integrity / 2)}% · Oxígeno +20 / fallo: Integridad -10, Oxígeno +5`;
+            document.getElementById('repair-cost').innerText = `(-${getActionCost('repair')} ENE)`;
+            document.getElementById('meditate-cost').innerText = `(-${getActionCost('meditate')} ENE)`;
+            document.getElementById('scavenge-cost').innerText = `(-${getActionCost('scavenge')} ENE)`;
+            document.getElementById('echo-cost').innerText = `(-${getActionCost('echo')} ENE)`;
+            document.getElementById('emergency-cost').innerText = `(-${getActionCost('emergency')} ENE)`;
+            document.getElementById('forecast').innerText =
+                `SIN ACCIÓN HOY: Oxígeno -${getDailyPressure()} · Cordura -${getDailyPressure()} · Evento mañana: ${Math.round(getEventChance(state.day + 1) * 100)}%`;
+
+            const actionButtons = document.querySelectorAll('#game-ui button[onclick^="performAction"]');
+            actionButtons.forEach(button => {
+                const type = button.getAttribute('onclick').match(/'([^']+)'/)[1];
+                button.disabled = state.pendingEvent !== null || state.energy < getActionCost(type);
+            });
+            document.getElementById('btn-next-day').disabled = state.pendingEvent !== null;
 
             const overlay = document.getElementById('critical-overlay');
             if (state.oxygen < 20 || state.sanity < 20 || state.integrity < 20) {
@@ -279,90 +452,226 @@
             const logBox = document.getElementById('log');
             const p = document.createElement('p');
             p.style.color = color;
-            p.innerHTML = `[DÍA ${state.day}] > ${msg}`;
+            p.textContent = `[DÍA ${state.day}] > ${msg}`;
             logBox.prepend(p);
+            while (logBox.children.length > 30) logBox.lastElementChild.remove();
         }
 
         function performAction(type) {
             if (state.isGameOver || !state.gameStarted) return;
+            if (state.pendingEvent) {
+                log("Resuelve el incidente activo antes de gastar recursos en otra cosa.", "#ffcc33");
+                return;
+            }
+            const cost = getActionCost(type);
+            if (state.energy < cost) {
+                log("La energía no alcanza. ECHO-9 recomienda rezar, pero no hay botón para eso.", "#ff3333");
+                return;
+            }
+            state.energy -= cost;
 
             if (type === 'repair') {
-                if (state.energy >= 3) {
-                    state.energy -= 3;
-                    if (Math.random() * 100 <= state.integrity) {
-                        state.oxygen = Math.min(100, state.oxygen + 20);
-                        log("Has convencido a la máquina de que no muera aún.");
-                    } else {
-                        log("¡CRAC! El sistema prefiere ignorarte.", "#ff3333");
-                        state.integrity = Math.max(0, state.integrity - 10);
-                    }
-                } else log("No hay energía para tus caprichos orgánicos.", "#ff3333");
+                const successChance = 50 + state.integrity / 2;
+                if (Math.random() * 100 <= successChance) {
+                    state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 20);
+                    log(`Has convencido a la máquina de que no muera aún (${Math.round(successChance)}% de éxito).`);
+                } else {
+                    state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 5);
+                    state.integrity = Math.max(0, state.integrity - 10);
+                    log("¡CRAC! El sistema te ignora, pero una válvula queda medio abierta. Oxígeno +5.", "#ff3333");
+                }
             }
 
             if (type === 'meditate') {
-                if (state.energy >= 3) {
-                    state.energy -= 3;
-                    state.sanity = Math.min(100, state.sanity + 25);
-                    log("Has mirado a la pared. La pared no ha parpadeado.");
-                } else log("Demasiado cansado para fingir cordura.", "#ff3333");
+                state.sanity = Math.min(MAX_RESOURCE, state.sanity + 25);
+                log("Has mirado a la pared. La pared no ha parpadeado. Cordura +25.");
             }
 
             if (type === 'scavenge') {
-                if (state.energy >= 4) {
-                    state.energy -= 4;
-                    state.integrity = Math.min(100, state.integrity + 15);
-                    log("Has puesto cinta adhesiva en el alma de la estación.");
-                } else log("No tienes fuerzas para apretar tornillos.", "#ff3333");
+                state.integrity = Math.min(100, state.integrity + 15);
+                log("Has puesto cinta adhesiva en el alma de la estación. Integridad +15%.");
             }
+
+            if (type === 'emergency') {
+                state.integrity = Math.min(100, state.integrity + 20);
+                log("La reparación de emergencia funciona. Por una vez, la estación obedece. Integridad +20%.");
+            }
+
+            if (type === 'echo') {
+                consultEcho();
+            }
+            checkCriticalState();
+            saveGame();
             updateUI();
         }
 
         function nextDay() {
             if (state.isGameOver || !state.gameStarted) return;
+            if (state.pendingEvent) {
+                log("Primero debes decidir qué hacer con el incidente activo.", "#ffcc33");
+                return;
+            }
 
-            let oxLoss = 7 + (state.day * 0.25);
-            let sanLoss = 7 + (state.day * 0.25);
+            const pressure = getDailyPressure();
+            state.oxygen -= pressure;
+            state.sanity -= pressure;
             
             if (state.day % 2 === 0) {
                 state.integrity = Math.max(0, state.integrity - 6);
                 log("La entropía está ganando la partida.", "#ff9900");
             }
 
-            state.oxygen -= oxLoss;
-            state.sanity -= sanLoss;
+            state.day++;
+            state.energy = 7;
 
-            if (Math.random() < 0.75) {
+            if (Math.random() < getEventChance()) {
                 const ev = events[Math.floor(Math.random() * events.length)];
-                state.oxygen -= ev.ox;
-                state.sanity -= ev.san;
-                state.integrity = Math.max(0, state.integrity - (ev.deg || 0));
-                
-                document.getElementById('event-display').innerHTML = `
-                    <p class="text-red-500 animate-pulse mb-2">>> NOTIFICACIÓN DE CAOS - DÍA ${state.day}:</p>
-                    <p class="text-2xl">${ev.text}</p>
-                `;
+                if (ev.choices) {
+                    state.pendingEvent = ev;
+                    showEventChoices(ev);
+                    log("El incidente exige una decisión antes de continuar.", "#ffcc33");
+                } else {
+                    applyEvent(ev);
+                    showEvent(ev);
+                }
             } else {
                 document.getElementById('event-display').innerHTML = `
-                    <p class="text-blue-400 mb-2">>> SILENCIO DIGITAL - DÍA ${state.day}:</p>
+                    <p class="text-blue-400 mb-2">>> RESPIRO OPERATIVO - DÍA ${state.day}:</p>
                     <p class="text-2xl">Nada ha explotado. Todavía. Es sospechoso.</p>
                 `;
+                log(`La estación concede un día sin evento (${Math.round((1 - getEventChance()) * 100)}% de probabilidad).`, "#66ccff");
             }
 
-            state.day++;
-            state.energy = 10;
+            checkCriticalState();
+            if (!state.isGameOver && !state.pendingEvent && state.day > 30) {
+                endGame(getVictoryText(), true);
+            } else if (!state.isGameOver && !state.pendingEvent) {
+                renderEchoMessage();
+            }
+            saveGame();
+            updateUI();
+        }
 
+        function applyEvent(ev) {
+            state.oxygen = Math.min(MAX_RESOURCE, state.oxygen - (ev.ox || 0));
+            state.sanity = Math.min(MAX_RESOURCE, state.sanity - (ev.san || 0));
+            state.integrity = Math.max(0, Math.min(100, state.integrity - (ev.deg || 0)));
+            if (ev.positive) {
+                log("Milagro estadístico: el hallazgo mejora varios sistemas.", "#66ccff");
+            } else {
+                log(`Evento resuelto sin elección: oxígeno -${ev.ox}, cordura -${ev.san}, integridad -${ev.deg}.`, "#ff3333");
+            }
+        }
+
+        function showEvent(ev) {
+            const color = ev.positive ? "text-blue-400" : "text-red-500";
+            const label = ev.positive ? ">> ANOMALÍA FAVORABLE" : ">> NOTIFICACIÓN DE CAOS";
+            document.getElementById('event-display').innerHTML = `
+                <p class="${color} animate-pulse mb-2">${label} - DÍA ${state.day}:</p>
+                <p class="text-2xl">${ev.text}</p>
+            `;
+        }
+
+        function showEventChoices(ev) {
+            showEvent(ev);
+            const display = document.getElementById('event-display');
+            ev.choices.forEach((choice, index) => {
+                const button = document.createElement('button');
+                button.className = 'choice-btn';
+                button.textContent = choice.label;
+                button.disabled = state.energy < choice.cost;
+                button.onclick = () => resolveEventChoice(index);
+                display.appendChild(button);
+            });
+        }
+
+        function resolveEventChoice(index) {
+            if (!state.pendingEvent || state.isGameOver) return;
+            const choice = state.pendingEvent.choices[index];
+            if (state.energy < choice.cost) {
+                log(`No tienes energía suficiente para esa respuesta. Necesitas ${choice.cost}.`, "#ff3333");
+                return;
+            }
+
+            state.energy -= choice.cost;
+            state.oxygen = Math.min(MAX_RESOURCE, state.oxygen - (choice.ox || 0));
+            state.sanity = Math.min(MAX_RESOURCE, state.sanity - (choice.san || 0));
+            state.integrity = Math.max(0, Math.min(100, state.integrity - (choice.deg || 0)));
+            state.pendingEvent = null;
+            log(`Decisión aplicada. Energía -${choice.cost}.`, "#ffcc33");
+            document.getElementById('event-display').innerHTML +=
+                `<p class="text-yellow-400 mt-3">>> DECISIÓN REGISTRADA. La estación toma nota.</p>`;
+
+            checkCriticalState();
+            if (!state.isGameOver && state.day > 30) {
+                endGame(getVictoryText(), true);
+            } else if (!state.isGameOver) {
+                renderEchoMessage();
+            }
+            saveGame();
+            updateUI();
+        }
+
+        function checkCriticalState() {
             if (state.oxygen <= 0) endGame("ASFIXIA. El aire se volvió un recuerdo lejano.");
             else if (state.sanity <= 0) endGame("LOCURA. Ahora eres tú quien le cuenta chistes a la IA.");
             else if (state.integrity <= 0) endGame("COLAPSO. La estación se convirtió en confeti de titanio.");
-            else if (state.day > 30) endGame("FIN DEL TURNO. Nadie ha venido a por ti, pero has ganado.", true);
-            else {
-                document.getElementById('ia-message').innerText = `"${weirdMessages[Math.floor(Math.random() * weirdMessages.length)]}"`;
+        }
+
+        function renderEchoMessage() {
+            let message;
+            if (state.day >= 28 && state.day <= 30) {
+                const lateMessages = {
+                    28: "La voz de la grabación no viene de fuera. Es tu propia voz, registrada después del día 30.",
+                    29: "He encontrado el origen de la voz: el compartimento C. Dice que no lo abras, pero también dice que ya lo abriste.",
+                    30: "Ahora lo recuerdo. La voz era una copia de ti intentando sobrevivir este mismo mes. Yo la llamé ECHO-9."
+                };
+                message = lateMessages[state.day];
+                state.voiceRevealed = true;
+            } else if (state.oxygen < 35) {
+                message = "El aire se está acabando. No escuches a nadie que respire detrás de ti.";
+            } else if (state.sanity < 35) {
+                message = "Tu mente está haciendo ruido. Descansar sería prudente, aunque aburrido.";
+            } else if (state.integrity < 35) {
+                message = "La estación se sostiene por costumbre. Una reparación de emergencia no sería mala idea.";
+            } else {
+                message = weirdMessages[Math.floor(Math.random() * weirdMessages.length)];
             }
-            updateUI();
+            document.getElementById('ia-message').innerText = `"${message}"`;
+        }
+
+        function consultEcho() {
+            const reliable = Math.random() < 0.65;
+            const realAdvice = state.oxygen < state.sanity && state.oxygen < state.integrity
+                ? "Prioridad: oxígeno."
+                : state.sanity < state.integrity
+                    ? "Prioridad: cordura."
+                    : "Prioridad: integridad.";
+            const falseAdvice = [
+                "Prioridad: no hacer nada. La quietud confunde a los depredadores.",
+                "Prioridad: el sistema menos dañado. Es el que más grita.",
+                "Prioridad: guardar energía. El mañana es un rumor."
+            ];
+            const message = reliable ? realAdvice : falseAdvice[Math.floor(Math.random() * falseAdvice.length)];
+            state.sanity = Math.min(MAX_RESOURCE, state.sanity + 5);
+            document.getElementById('ia-message').innerText = `"${message} (+5 cordura; fiabilidad desconocida)"`;
+            log(`ECHO-9 ofrece un consejo ${reliable ? "aparentemente fiable" : "dudoso"}: ${message}`, "#ffcc33");
+        }
+
+        function getVictoryText() {
+            if (state.integrity >= 80) {
+                return "FIN DEL TURNO. Has mantenido la estación casi intacta. La voz de la grabación dice tu nombre.";
+            }
+            if (state.integrity >= 40) {
+                return "FIN DEL TURNO. Sobreviviste entre parches, deuda y silencio. Nadie vino a buscarte.";
+            }
+            return "FIN DEL TURNO. La estación sigue en pie por una pieza y una mentira. Tú también.";
         }
 
         function endGame(text, win = false) {
             state.isGameOver = true;
+            state.pendingEvent = null;
+            localStorage.removeItem(SAVE_KEY);
             const modal = document.getElementById('modal');
             const container = document.getElementById('modal-container');
             const title = document.getElementById('modal-title');
@@ -379,15 +688,32 @@
             }
         }
 
+        function checkSavedGame() {
+            try {
+                const saved = localStorage.getItem(SAVE_KEY);
+                if (saved && JSON.parse(saved).day) {
+                    document.getElementById('continue-btn').classList.remove('hidden');
+                }
+            } catch {
+                localStorage.removeItem(SAVE_KEY);
+            }
+        }
+
         window.addEventListener('keydown', (e) => {
+            if (e.target.matches('input, textarea, select, [contenteditable="true"]')) return;
             if (e.code === 'Digit1') performAction('repair');
             if (e.code === 'Digit2') performAction('meditate');
             if (e.code === 'Digit3') performAction('scavenge');
+            if (e.code === 'Digit4') performAction('echo');
+            if (e.code === 'Digit5') performAction('emergency');
             if (e.code === 'Space') {
+                e.preventDefault();
                 if (!state.gameStarted) startGame();
                 else nextDay();
             }
         });
+
+        checkSavedGame();
     </script>
 </body>
 </html>
