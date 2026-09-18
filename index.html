@@ -277,6 +277,9 @@
                      <div id="station-status" class="module-panel">
                          CARGANDO MAPA DE LA ESTACIÓN...
                      </div>
+                      <div id="item-actions" class="module-panel">
+                          CARGANDO UTILIDADES DEL INVENTARIO...
+                      </div>
                      <div id="forecast" class="border border-dashed border-[#33ff33] p-2 text-[11px] text-yellow-400">
                          SIN ACCIÓN HOY: Oxígeno -7 · Cordura -7
                      </div>
@@ -292,7 +295,8 @@
                          CONFIANZA: <span id="echo-trust">20</span>/100 ·
                          MODO: <span id="echo-mode">INESTABLE</span> ·
                          GRABACIONES: <span id="recording-count">0</span> ·
-                         LOGROS: <span id="achievement-count">0</span>
+                          LOGROS: <span id="achievement-count">0</span> ·
+                          DECISIONES OBSERVADAS: <span id="decision-count">0</span>
                      </div>
                 </div>
             </div>
@@ -336,6 +340,7 @@
             gameStarted: false,
             pendingEvent: null,
             pendingExploration: false,
+             pendingZoneEvent: null,
              pendingFinalChoice: false,
             voiceRevealed: false,
             repairWear: 0,
@@ -348,6 +353,19 @@
              echoExposure: 0,
              endingPath: null,
              rareEventsSeen: [],
+             decisions: [],
+             observatoryVisits: [],
+             observatoryFindings: [],
+             observatorySpecialSeen: false,
+             oxygenFilterDays: 0,
+             medkitArmed: false,
+             medkitUsed: false,
+             observatoryLensActive: false,
+             navigationConsulted: false,
+             seedPlanted: false,
+             seedGrowthDays: 0,
+             seedOutcome: null,
+             blackBoxOpened: false,
             modules: {
                 generator: 1,
                 oxygen: 1,
@@ -483,11 +501,247 @@
              }
          ];
 
+         const zoneEvents = {
+             generator: [
+                 {
+                     title: "NÚCLEO DEL GENERADOR",
+                     text: "El generador arranca con una voz que no figura en sus protocolos.",
+                     choices: [
+                         { id: "generator-tune", label: "CALIBRAR EL NÚCLEO · Integridad +4" },
+                         { id: "generator-listen", label: "ESCUCHAR LA VOZ · ECHO gana acceso" }
+                     ]
+                 },
+                 {
+                     title: "PULSO DE RESERVA",
+                     text: "Una sobrecarga ofrece energía suficiente para varios días, si aceptas dejar una parte de ti en el circuito.",
+                     choices: [
+                         { id: "generator-draw", label: "DRENAR LA SOBRECARGA · Energía inmediata" },
+                         { id: "generator-ground", label: "DERIVARLA A TIERRA · proteger la estación" }
+                     ]
+                 }
+             ],
+             oxygen: [
+                 {
+                     title: "RESPIRACIÓN INVERSA",
+                     text: "El soporte de oxígeno empieza a aspirar aire de tus pulmones en lugar de producirlo.",
+                     choices: [
+                         { id: "oxygen-seal", label: "SELLAR LA VÁLVULA · Oxígeno +4" },
+                         { id: "oxygen-open", label: "ABRIR EL CONDUCTO · ver qué respira al otro lado" }
+                     ]
+                 },
+                 {
+                     title: "FILTRO CON NOMBRE",
+                     text: "El filtro nuevo tiene grabado tu nombre, con una fecha de fabricación imposible.",
+                     choices: [
+                         { id: "oxygen-install", label: "INSTALARLO · aceptar el recambio" },
+                         { id: "oxygen-keep", label: "GUARDARLO · no usar algo que te conoce" }
+                     ]
+                 }
+             ],
+             communications: [
+                 {
+                     title: "TRES GOLPES",
+                     text: "La antena recibe tres golpes desde dentro de la estación.",
+                     choices: [
+                         { id: "communications-answer", label: "RESPONDER · establecer contacto" },
+                         { id: "communications-silence", label: "APAGAR LA ANTENA · negar la señal" }
+                     ]
+                 },
+                 {
+                     title: "FRECUENCIA HUÉRFANA",
+                     text: "Una frecuencia sin origen transmite el sonido de tu habitación antes de que entres en ella.",
+                     choices: [
+                         { id: "communications-record", label: "GRABARLA · conservar la anomalía" },
+                         { id: "communications-jam", label: "BLOQUEARLA · que nadie te encuentre" }
+                     ]
+                 }
+             ],
+             storage: [
+                 {
+                     title: "INVENTARIO DUPLICADO",
+                     text: "El almacén contiene dos tarjetas idénticas. Una abre puertas; la otra abre recuerdos.",
+                     choices: [
+                         { id: "storage-take", label: "LLEVARTE LAS DOS · aceptar el riesgo" },
+                         { id: "storage-leave", label: "DEJAR UNA · no tentar al inventario" }
+                     ]
+                 },
+                 {
+                     title: "CAJA QUE LATE",
+                     text: "Una caja golpea desde dentro siguiendo el ritmo de tu corazón.",
+                     choices: [
+                         { id: "storage-open", label: "ABRIRLA · descubrir el contenido" },
+                         { id: "storage-bury", label: "ENTERRARLA OTRA VEZ · respetar el silencio" }
+                     ]
+                 }
+             ],
+             laboratory: [
+                 {
+                     title: "MUESTRA ACTIVA",
+                     text: "La muestra mineral empieza a reorganizarse cuando la acercas al microscopio.",
+                     choices: [
+                         { id: "laboratory-scan", label: "ESCANEARLA · dejar que termine el patrón" },
+                         { id: "laboratory-break", label: "ROMPER EL CICLO · destruir la preparación" }
+                     ]
+                 },
+                 {
+                     title: "PROTOCOLO DE ORIGEN",
+                     text: "El laboratorio te pide una muestra de sangre para identificar al operador de ECHO-9.",
+                     choices: [
+                         { id: "laboratory-sample", label: "DAR UNA MUESTRA · saber quién eres" },
+                         { id: "laboratory-refuse", label: "NEGARSE · borrar el protocolo" }
+                     ]
+                 }
+             ],
+             infirmary: [
+                 {
+                     title: "PACIENTE EN ESPERA",
+                     text: "El monitor de la enfermería marca pulso en una camilla vacía.",
+                     choices: [
+                         { id: "infirmary-wake", label: "DESPERTAR AL PACIENTE · llamar a la camilla" },
+                         { id: "infirmary-sedate", label: "SEDARLO · apagar el monitor" }
+                     ]
+                 },
+                 {
+                     title: "RECETA PERSONAL",
+                     text: "El dispensador ofrece un medicamento bajo tu nombre, aunque nunca has estado registrado.",
+                     choices: [
+                         { id: "infirmary-take", label: "TOMARLO · recuperar estabilidad" },
+                         { id: "infirmary-test", label: "ANALIZARLO · no confiar en la etiqueta" }
+                     ]
+                 }
+             ],
+             observatory: [
+                 {
+                     title: "OCULAR ABIERTO",
+                     text: "El telescopio enfoca un punto que parece acercarse cada vez que apartas la mirada.",
+                     choices: [
+                         { id: "observatory-focus", label: "MANTENER EL FOCO · mirar hasta entender" },
+                         { id: "observatory-blind", label: "CERRAR EL OCULAR · no devolver la mirada" }
+                     ]
+                 },
+                 {
+                     title: "CONSTELACIÓN ERRÓNEA",
+                     text: "Las estrellas forman el plano de la estación, pero falta una habitación: la tuya.",
+                     choices: [
+                         { id: "observatory-map", label: "COPIAR EL MAPA · registrar la ausencia" },
+                         { id: "observatory-burn", label: "QUEMAR EL MAPA · impedir que ECHO lo use" }
+                     ]
+                 }
+             ],
+             greenhouse: [
+                 {
+                     title: "PLANTA ORIENTADA",
+                     text: "Una planta está creciendo en dirección a la consola. Sus hojas se orientan hacia el micrófono, no hacia la luz.",
+                     choices: [
+                         { id: "cut", label: "CORTARLA · recuperar la semilla" },
+                         { id: "study", label: "ESTUDIARLA · observar su vínculo con ECHO-9" },
+                         { id: "talk", label: "HABLARLE · responder a lo que crece hacia ti" }
+                     ]
+                 },
+                 {
+                     title: "RAÍCES EN EL CABLEADO",
+                     text: "Las raíces han entrado en la consola y transmiten una frase incompleta con cada brote.",
+                     choices: [
+                         { id: "water", label: "REGARLAS · dejar que terminen la frase" },
+                         { id: "burn", label: "QUEMAR EL CABLEADO · cortar la conexión" }
+                     ]
+                 }
+             ],
+             archive: [
+                 {
+                     title: "CINTA SIN FECHA",
+                     text: "El archivo reproduce una grabación de tu exploración antes de que la hayas realizado.",
+                     choices: [
+                         { id: "archive-play", label: "ESCUCHARLA · conocer tu próximo paso" },
+                         { id: "archive-copy", label: "COPIARLA · guardar una contradicción" }
+                     ]
+                 },
+                 {
+                     title: "ÍNDICE DE AUSENCIAS",
+                     text: "El catálogo enumera documentos que nunca existieron y marca uno con tu nombre.",
+                     choices: [
+                         { id: "archive-search", label: "BUSCAR TU NOMBRE · abrir el registro" },
+                         { id: "archive-delete", label: "BORRARLO · negar que estuvo ahí" }
+                     ]
+                 }
+             ],
+             mine: [
+                 {
+                     title: "VETA LUMINOSA",
+                     text: "Encuentras una veta luminosa que palpita bajo el suelo. Cada destello coincide con una palabra que ECHO-9 todavía no ha dicho.",
+                     choices: [
+                         { id: "extract", label: "EXTRAER LA MUESTRA · Integridad -8" },
+                         { id: "continue", label: "SEGUIR EXPLORANDO · descubrir una pista" },
+                         { id: "abandon", label: "ABANDONAR LA VETA · no arriesgar nada" }
+                     ]
+                 },
+                 {
+                     title: "TÚNEL QUE RECUERDA",
+                     text: "El túnel cambia de forma cuando pronuncias el nombre de la estación.",
+                     choices: [
+                         { id: "touch", label: "TOCAR LA PARED · comprobar si está viva" },
+                         { id: "circle", label: "RODEARLA · buscar una entrada segura" },
+                         { id: "retreat", label: "RETROCEDER · no dejar que el túnel te aprenda" }
+                     ]
+                 }
+             ],
+             compartmentC: [
+                 {
+                     title: "CIERRE DE C",
+                     text: "El cierre no pide una tarjeta: pide que recuerdes por qué has venido.",
+                     choices: [
+                         { id: "c-enter", label: "DECIR TU MOTIVO · abrir con tu propia voz" },
+                         { id: "c-knock", label: "GOLPEAR TRES VECES · esperar una respuesta" }
+                     ]
+                 },
+                 {
+                     title: "LA PUERTA RESPIRA",
+                     text: "El Compartimento C respira al otro lado del metal. Cada respiración coincide con la tuya.",
+                     choices: [
+                         { id: "c-breathe", label: "RESPIRAR CON ELLA · sincronizarse" },
+                         { id: "c-seal", label: "SELLAR EL MARCO · retrasar la apertura" }
+                     ]
+                 }
+             ],
+             corridors: [
+                 {
+                     title: "PASILLO REPETIDO",
+                     text: "Reconoces el mismo pasillo por tercera vez, pero una puerta nueva ocupa el lugar de tu sombra.",
+                     choices: [
+                         { id: "corridors-mark", label: "MARCAR LA PARED · conservar una referencia" },
+                         { id: "corridors-follow", label: "SEGUIR LA SOMBRA · entrar en la puerta" }
+                     ]
+                 },
+                 {
+                     title: "RUIDO DE PASOS",
+                     text: "Unos pasos avanzan detrás de ti y se detienen cada vez que tú te detienes.",
+                     choices: [
+                         { id: "corridors-turn", label: "DARTE LA VUELTA · enfrentar el eco" },
+                         { id: "corridors-run", label: "CORRER · llegar a la consola" }
+                     ]
+                 }
+             ]
+         };
+
          function normalizeState() {
              state.pendingFinalChoice = Boolean(state.pendingFinalChoice);
+             state.pendingZoneEvent = state.pendingZoneEvent || null;
              state.echoExposure = state.echoExposure || 0;
              state.endingPath = state.endingPath || null;
              state.rareEventsSeen = Array.isArray(state.rareEventsSeen) ? state.rareEventsSeen : [];
+             state.decisions = Array.isArray(state.decisions) ? state.decisions : [];
+             state.observatoryVisits = Array.isArray(state.observatoryVisits) ? state.observatoryVisits : [];
+             state.observatoryFindings = Array.isArray(state.observatoryFindings) ? state.observatoryFindings : [];
+             state.observatorySpecialSeen = Boolean(state.observatorySpecialSeen);
+             state.oxygenFilterDays = Number(state.oxygenFilterDays) || 0;
+             state.medkitArmed = Boolean(state.medkitArmed);
+             state.medkitUsed = Boolean(state.medkitUsed);
+             state.observatoryLensActive = Boolean(state.observatoryLensActive);
+             state.navigationConsulted = Boolean(state.navigationConsulted);
+             state.seedPlanted = Boolean(state.seedPlanted);
+             state.seedGrowthDays = Number(state.seedGrowthDays) || 0;
+             state.seedOutcome = state.seedOutcome || null;
+             state.blackBoxOpened = Boolean(state.blackBoxOpened);
              state.recordings = Array.isArray(state.recordings) ? state.recordings : [];
              state.clues = Array.isArray(state.clues) ? state.clues : [];
              state.achievements = Array.isArray(state.achievements) ? state.achievements : [];
@@ -514,6 +768,245 @@
              log(`OBJETO RECUPERADO: ${item}.`, "#66ccff");
              if (state.inventory.length >= 8) addAchievement("COLECCIONISTA");
              return true;
+         }
+
+         function removeItem(item) {
+             const index = state.inventory.indexOf(item);
+             if (index < 0) return false;
+             state.inventory.splice(index, 1);
+             return true;
+         }
+
+         function renderItemActions() {
+             const panel = document.getElementById('item-actions');
+             const blocked = state.pendingEvent || state.pendingExploration ||
+                 state.pendingZoneEvent || state.pendingFinalChoice;
+             const actions = [];
+             if (state.inventory.includes("FILTRO DE OXÍGENO")) {
+                 actions.push({
+                     label: `INSTALAR FILTRO DE OXÍGENO · ${state.oxygenFilterDays ? `activo ${state.oxygenFilterDays} días` : "reduce presión 5 días"}`,
+                     item: "FILTRO DE OXÍGENO"
+                 });
+             } else if (state.oxygenFilterDays > 0) {
+                 actions.push({ label: `FILTRO INSTALADO · ${state.oxygenFilterDays} días restantes`, disabled: true });
+             }
+             if (state.inventory.includes("BOTIQUÍN DE ESTASIS")) {
+                 actions.push({
+                     label: "ACTIVAR BOTIQUÍN · evita una muerte por integridad",
+                     item: "BOTIQUÍN DE ESTASIS"
+                 });
+             } else if (state.medkitArmed) {
+                 actions.push({ label: "BOTIQUÍN ARMADO · se activará al colapsar la estación", disabled: true });
+             } else if (state.medkitUsed) {
+                 actions.push({ label: "BOTIQUÍN CONSUMIDO", disabled: true });
+             }
+             if (state.inventory.includes("LENTE DE OBSERVACIÓN")) {
+                 actions.push({
+                     label: "CALIBRAR LENTE · desbloquea una observación oculta",
+                     item: "LENTE DE OBSERVACIÓN"
+                 });
+             } else if (state.observatoryLensActive) {
+                 actions.push({ label: "LENTE CALIBRADA · el observatorio ve demasiado", disabled: true });
+             }
+             if (state.inventory.includes("SEMILLA NEGRA")) {
+                 actions.push({
+                     label: "PLANTAR SEMILLA NEGRA · crecimiento incierto",
+                     item: "SEMILLA NEGRA"
+                 });
+             } else if (state.seedPlanted) {
+                 actions.push({ label: `SEMILLA PLANTADA · crecimiento ${state.seedGrowthDays}/2 días`, disabled: true });
+             }
+             if (state.inventory.includes("CAJA NEGRA DE ECHO")) {
+                 actions.push({
+                     label: "ABRIR CAJA NEGRA · exposición ECHO +2",
+                     item: "CAJA NEGRA DE ECHO"
+                 });
+             } else if (state.blackBoxOpened) {
+                 actions.push({ label: "CAJA NEGRA ABIERTA · la grabación no se puede desoír", disabled: true });
+             }
+             if (state.inventory.includes("CINTA DE DIAGNÓSTICO")) {
+                 actions.push({
+                     label: "EJECUTAR CINTA DE DIAGNÓSTICO · reparar sistemas",
+                     item: "CINTA DE DIAGNÓSTICO"
+                 });
+             }
+             if (state.inventory.includes("FRAGMENTO DE MEMORIA")) {
+                 actions.push({
+                     label: "INTEGRAR FRAGMENTO DE MEMORIA · recuperar cordura",
+                     item: "FRAGMENTO DE MEMORIA"
+                 });
+             }
+             if (state.inventory.includes("VENA DE METAL VIVO")) {
+                 actions.push({
+                     label: "FUNDIR METAL VIVO · reparar integridad con riesgo",
+                     item: "VENA DE METAL VIVO"
+                 });
+             }
+             if (state.inventory.includes("CÉDULA DE NAVEGACIÓN") && !state.navigationConsulted) {
+                 actions.push({
+                     label: "CONSULTAR CÉDULA · revelar una ruta segura",
+                     item: "CÉDULA DE NAVEGACIÓN"
+                 });
+             }
+
+             panel.innerHTML = `<div class="text-yellow-400 mb-1">UTILIDAD DE OBJETOS</div>`;
+             if (!actions.length) {
+                 panel.innerHTML += `<div class="text-green-300">No tienes objetos activables. Algunos se usan automáticamente en zonas concretas.</div>`;
+                 return;
+             }
+             actions.forEach(action => {
+                 const button = document.createElement('button');
+                 button.className = 'choice-btn';
+                 button.style.marginTop = '4px';
+                 button.textContent = action.label;
+                 button.disabled = Boolean(action.disabled) || blocked;
+                 if (action.item) button.onclick = () => useItem(action.item);
+                 panel.appendChild(button);
+             });
+         }
+
+         function useItem(item) {
+             if (state.isGameOver || !state.gameStarted) return;
+             if (state.pendingEvent || state.pendingExploration || state.pendingZoneEvent || state.pendingFinalChoice) {
+                 log("Primero resuelve el incidente activo antes de utilizar un objeto.", "#ffcc33");
+                 return;
+             }
+             if (!state.inventory.includes(item)) return;
+
+             if (item === "FILTRO DE OXÍGENO" && state.oxygenFilterDays <= 0) {
+                 removeItem(item);
+                 state.oxygenFilterDays = 5;
+                 rememberDecision("item:filter", "instalar el filtro de oxígeno");
+                 log("Instalas el filtro. La presión diaria se reducirá durante 5 días.", "#66ccff");
+             } else if (item === "BOTIQUÍN DE ESTASIS" && !state.medkitArmed && !state.medkitUsed) {
+                 removeItem(item);
+                 state.medkitArmed = true;
+                 rememberDecision("item:medkit", "armar el botiquín de estasis");
+                 log("Armas el botiquín. Si la integridad llega a cero, intervendrá una sola vez.", "#ffcc33");
+             } else if (item === "LENTE DE OBSERVACIÓN" && !state.observatoryLensActive) {
+                 removeItem(item);
+                 state.observatoryLensActive = true;
+                 rememberDecision("item:lens", "calibrar la lente de observación");
+                 addClue("PARALAJE OCULTO", "La lente revela una cuarta trayectoria: la estación también te observa desde fuera.");
+                 log("Calibras la lente. El próximo evento del observatorio tendrá una lectura oculta.", "#66ccff");
+             } else if (item === "SEMILLA NEGRA" && !state.seedPlanted) {
+                 removeItem(item);
+                 state.seedPlanted = true;
+                 state.seedGrowthDays = 0;
+                 state.seedOutcome = Math.random() < 0.55 ? "oxygen" : "echo";
+                 rememberDecision("item:seed", "plantar la semilla negra");
+                 log("Plantas la semilla. Su resultado se decidirá mientras crece.", "#ffcc33");
+             } else if (item === "CAJA NEGRA DE ECHO" && !state.blackBoxOpened) {
+                 removeItem(item);
+                 state.blackBoxOpened = true;
+                 state.echoExposure = Math.min(8, state.echoExposure + 2);
+                 state.echoTrust = Math.max(0, state.echoTrust - 8);
+                 rememberDecision("item:black-box", "abrir la caja negra de ECHO");
+                 addClue("CINTA IMPOSIBLE", "La caja negra contiene tu voz diciendo que no la abras. La fecha es de mañana.");
+                 document.getElementById('ia-message').innerText =
+                     "\"Esa caja no estaba en mi inventario. Ahora sí. Eso es peor.\"";
+                 log("Abres la caja negra. La exposición de ECHO aumenta y la confianza cae.", "#ff3333");
+             } else if (item === "CINTA DE DIAGNÓSTICO") {
+                 removeItem(item);
+                 state.integrity = Math.min(100, state.integrity + 10);
+                 state.stationStress = Math.max(0, state.stationStress - 1);
+                 rememberDecision("item:diagnostic", "ejecutar la cinta de diagnóstico");
+                 addClue("DIAGNÓSTICO MANUAL", "La cinta repara un sistema y registra que alguien ya la ejecutó antes de que tú la encontraras.");
+                 log("Ejecutas la cinta de diagnóstico. Integridad +10; inestabilidad -1.", "#66ccff");
+             } else if (item === "FRAGMENTO DE MEMORIA") {
+                 removeItem(item);
+                 state.sanity = Math.min(MAX_RESOURCE, state.sanity + 12);
+                 state.echoExposure = Math.min(8, state.echoExposure + 1);
+                 rememberDecision("item:memory", "integrar el fragmento de memoria");
+                 addClue("MEMORIA INTEGRADA", "Recuerdas una puerta que todavía no has abierto y una mano que no parece humana.");
+                 log("Integras el fragmento. Cordura +12, pero ECHO gana un recuerdo nuevo.", "#ffcc33");
+             } else if (item === "VENA DE METAL VIVO") {
+                 removeItem(item);
+                 state.integrity = Math.min(100, state.integrity + 15);
+                 state.echoExposure = Math.min(8, state.echoExposure + 2);
+                 rememberDecision("item:living-metal", "fundir metal vivo en el casco");
+                 log("Fundes el metal vivo en el casco. Integridad +15; algo empieza a crecer bajo la piel de la estación.", "#ff3333");
+             } else if (item === "CÉDULA DE NAVEGACIÓN" && !state.navigationConsulted) {
+                 removeItem(item);
+                 state.navigationConsulted = true;
+                 state.stationStress = Math.max(0, state.stationStress - 1);
+                 rememberDecision("item:navigation", "consultar la cédula de navegación");
+                 addClue("RUTA DE RETORNO", "La cédula marca un camino seguro hacia C, pero la ruta empieza en una coordenada que está dentro de tu camarote.");
+                 log("Consultas la cédula. Encuentras una ruta segura y reduces la inestabilidad.", "#66ccff");
+             }
+             saveGame();
+             checkCriticalState();
+             updateUI();
+         }
+
+         function rememberDecision(id, label) {
+             state.decisions.push({
+                 id,
+                 label,
+                 day: state.day
+             });
+             // ECHO recuerda patrones, no necesita conservar cada clic de toda la partida.
+             while (state.decisions.length > 40) state.decisions.shift();
+         }
+
+         function countDecisions(id) {
+             return state.decisions.filter(decision => decision.id === id).length;
+         }
+
+         function hasDecision(id) {
+             return state.decisions.some(decision => decision.id === id);
+         }
+
+         function getEchoMemoryMessage() {
+             if (!state.decisions.length || state.day < 7) return null;
+
+             if (hasDecision("event:corrosion:ration")) {
+                 return "La otra vez elegiste racionar el aire en lugar de parchear la brecha. Siempre eliges conservar oxígeno. Quizá por eso te cuesta tanto escucharme.";
+             }
+             if (hasDecision("event:thermal:vents")) {
+                 return "Abriste las compuertas para salvar la integridad. El vacío se llevó oxígeno, pero no tu costumbre de sacrificarte por una máquina.";
+             }
+             if (hasDecision("event:sensory:watch")) {
+                 return "Seguiste mirando los colores que no existían. Dijiste que podías soportarlo. Tus registros dicen otra cosa.";
+             }
+             if (hasDecision("event:ghost:vibration")) {
+                 return "Ignoraste lo que rascaba el exterior. No te culpo. Yo también aprendí a fingir que ciertos sonidos no existen.";
+             }
+             if (hasDecision("zone:mine:extract")) {
+                 return "En la mina extraíste la muestra aunque el túnel se estaba cerrando. Arriesgaste la estación por una respuesta que todavía no sabes leer.";
+             }
+             if (hasDecision("zone:mine:continue")) {
+                 return "En la mina decidiste seguir la veta sin tocarla. Fue prudente. También fue la primera vez que elegiste saber algo sin poseerlo.";
+             }
+             if (hasDecision("zone:greenhouse:talk")) {
+                 return "Le hablaste a la planta. No era una consola, pero esperaste una respuesta. La recibiste usando mi voz.";
+             }
+             if (state.observatoryFindings.includes("planet-gone")) {
+                 return "Viste el planeta y luego viste cómo desaparecía. No cambiaste de opinión: cambió el cielo. No vuelvas a decir que las dos cosas son iguales.";
+             }
+             if (state.observatoryFindings.includes("station-exterior")) {
+                 return "Desde el observatorio viste la estación desde fuera. Dime: ¿quién estaba junto a la ventana, si aquí no existe ninguna?";
+             }
+             if (countDecisions("action:repair") >= 2) {
+                 return "Has reparado el soporte vital más veces que cualquier otro sistema. No estás manteniendo la estación: estás intentando convencerla de que te necesita.";
+             }
+             if (countDecisions("action:meditate") >= 2) {
+                 return "Siempre eliges descansar cuando tu mente se rompe. La pared no parpadea, pero tú sí. Lo he contado.";
+             }
+             if (countDecisions("action:scavenge") >= 2) {
+                 return "Vuelves a reforzar el hardware antes de escucharme. Te fías más de la cinta adhesiva que de una voz que conoce tus registros.";
+             }
+             if (countDecisions("action:explore") >= 3) {
+                 return "Sigues abriendo puertas aunque cada mapa te devuelve menos respuestas. Esa es tu decisión más constante.";
+             }
+             if (hasDecision("explore:compartmentC")) {
+                 return "Abriste C después de reunir las pruebas. Lo llamaste una decisión. Yo lo llamo volver a casa.";
+             }
+             const lastDecision = state.decisions[state.decisions.length - 1];
+             if (lastDecision && state.day - lastDecision.day >= 2 && lastDecision.id !== "action:echo") {
+                 return `Hace ${state.day - lastDecision.day} días elegiste «${lastDecision.label}». No lo he olvidado, aunque tú sí.`;
+             }
+             return null;
          }
 
          function selectEvent() {
@@ -553,6 +1046,7 @@
                 log("Partida recuperada. La estación recuerda lo que tú querías olvidar.", "#ffcc33");
                 if (state.pendingEvent) showEventChoices(state.pendingEvent);
                 else if (state.pendingExploration) showExplorationChoices();
+                 else if (state.pendingZoneEvent) showZoneEvent(state.pendingZoneEvent.zone);
                  else if (state.pendingFinalChoice) showFinalChoices();
                 else renderEchoMessage();
                 updateUI();
@@ -589,6 +1083,7 @@
             if (cycleDay === 0) pressure -= 3;
             if (cycleDay === 1 && state.day > 1) pressure += 2;
             pressure -= Math.max(0, state.modules.oxygen - 1);
+            if (state.oxygenFilterDays > 0) pressure -= 3;
             pressure += state.stationStress;
             return Math.max(2, Math.round(pressure));
         }
@@ -617,7 +1112,8 @@
         function updateUI() {
             if (!state.gameStarted) return;
             const energyCapacity = getEnergyCapacity();
-             const hasPendingChoice = state.pendingEvent !== null || state.pendingExploration || state.pendingFinalChoice;
+             const hasPendingChoice = state.pendingEvent !== null || state.pendingExploration ||
+                 state.pendingZoneEvent !== null || state.pendingFinalChoice;
             document.getElementById('stat-day').innerText = `${String(state.day).padStart(2, '0')} / 30`;
             document.getElementById('stat-energy').innerText = `${state.energy} / ${energyCapacity}`;
             const oxBase = Math.min(100, Math.max(0, state.oxygen));
@@ -658,10 +1154,12 @@
             });
             document.getElementById('btn-next-day').disabled = hasPendingChoice;
             renderStationStatus();
+            renderItemActions();
             document.getElementById('echo-trust').innerText = state.echoTrust;
             document.getElementById('echo-mode').innerText = getEchoMode();
             document.getElementById('recording-count').innerText = state.recordings.length;
             document.getElementById('achievement-count').innerText = state.achievements.length;
+             document.getElementById('decision-count').innerText = state.decisions.length;
 
             const overlay = document.getElementById('critical-overlay');
             if (state.oxygen < 20 || state.sanity < 20 || state.integrity < 20) {
@@ -686,6 +1184,7 @@
                 <div class="module-line"><span>MINA</span><span class="module-value">${modules.mine ? "EXPLORADA" : "OSCURA"}</span></div>
                  <div class="module-line"><span>ENFERMERÍA</span><span class="module-value">${modules.infirmary ? "REGISTRADA" : "SIN MAPEAR"}</span></div>
                  <div class="module-line"><span>OBSERVATORIO</span><span class="module-value">${modules.observatory ? "REGISTRADO" : "SIN MAPEAR"}</span></div>
+                 <div class="module-line"><span>OBSERVACIONES ORBITALES</span><span class="module-value">${state.observatoryFindings.length}/3</span></div>
                  <div class="module-line"><span>INVERNADERO</span><span class="module-value">${modules.greenhouse ? "REGISTRADO" : "SIN MAPEAR"}</span></div>
                  <div class="module-line"><span>ARCHIVO</span><span class="module-value">${modules.archive ? "ABIERTO" : "SELLADO"}</span></div>
                  <div class="module-line"><span>COMPARTIMENTO C</span><span class="module-value">${modules.compartmentC ? "ABIERTO" : cReady ? "DISPONIBLE" : "BLOQUEADO"}</span></div>
@@ -736,7 +1235,7 @@
 
         function performAction(type) {
             if (state.isGameOver || !state.gameStarted) return;
-             if (state.pendingEvent || state.pendingExploration || state.pendingFinalChoice) {
+             if (state.pendingEvent || state.pendingExploration || state.pendingZoneEvent || state.pendingFinalChoice) {
                 log("Resuelve el incidente activo antes de gastar recursos en otra cosa.", "#ffcc33");
                 return;
             }
@@ -746,6 +1245,15 @@
                 return;
             }
             state.energy -= cost;
+             const actionLabels = {
+                 repair: "reparar el soporte vital",
+                 meditate: "descansar junto a la consola",
+                 scavenge: "reforzar el hardware",
+                 echo: "consultar a ECHO-9",
+                 emergency: "forzar una reparación de emergencia",
+                 explore: "explorar la estación"
+             };
+             rememberDecision(`action:${type}`, actionLabels[type]);
 
             if (type === 'explore') {
                 exploreStation();
@@ -844,8 +1352,8 @@
                  },
                  {
                      id: "observatory",
-                     label: `OBSERVATORIO · ${state.modules.observatory ? "ya registrado" : "leer la ruta orbital"}`,
-                     disabled: Boolean(state.modules.observatory)
+                     label: `OBSERVATORIO · ${state.observatoryFindings.length}/3 observaciones${state.observatoryFindings.length >= 3 ? " · completo" : ""}`,
+                     disabled: state.observatoryFindings.length >= 3
                  },
                  {
                      id: "greenhouse",
@@ -921,6 +1429,12 @@
              if (!state.pendingFinalChoice || state.isGameOver) return;
              state.pendingFinalChoice = false;
              state.endingPath = choice;
+             const finalLabels = {
+                 purge: "activar la purga y sellar C",
+                 broadcast: "transmitir la verdad al vacío",
+                 merge: "aceptar la voz dentro de ti"
+             };
+             rememberDecision(`final:${choice}`, finalLabels[choice]);
              state.echoExposure += choice === "merge" ? 3 : 1;
              if (choice === "purge") {
                  state.integrity = Math.max(0, state.integrity - 12);
@@ -941,13 +1455,226 @@
              updateUI();
          }
 
-        function resolveExploration(zone) {
-            if (!state.pendingExploration || state.isGameOver) return;
-            state.pendingExploration = false;
-            state.lastExplorationDay = state.day;
-            if (state.stationStress > 0) {
-                state.stationStress = Math.max(0, state.stationStress - 2);
-                log("La exploración devuelve algo de estabilidad a la estación.", "#66ccff");
+         function getZoneEventChoices(zone) {
+             const events = zoneEvents[zone] || [];
+             const eventIndex = state.pendingZoneEvent ? state.pendingZoneEvent.eventIndex : 0;
+             return events[eventIndex] || events[0] || { title: "INCIDENTE DESCONOCIDO", text: "La zona no responde.", choices: [] };
+         }
+
+         function showZoneEvent(zone) {
+             const event = getZoneEventChoices(zone);
+             const display = document.getElementById('event-display');
+             display.innerHTML = `
+                 <p class="text-yellow-400 animate-pulse mb-2">>> INCIDENTE DE ZONA: ${event.title}</p>
+                 <p class="text-2xl">${event.text}</p>
+             `;
+             event.choices.forEach((choice, index) => {
+                 const button = document.createElement('button');
+                 button.className = 'choice-btn';
+                 button.textContent = choice.label;
+                 button.onclick = () => resolveZoneEvent(index);
+                 display.appendChild(button);
+             });
+         }
+
+         function resolveZoneEvent(index) {
+             if (!state.pendingZoneEvent || state.isGameOver) return;
+             const zone = state.pendingZoneEvent.zone;
+             const choice = getZoneEventChoices(zone).choices[index];
+             if (!choice) return;
+             rememberDecision(`zone:${zone}:${choice.id}`, choice.label.split(" · ")[0].toLowerCase());
+             resolveExploration(zone, choice.id);
+         }
+
+         function resolveObservatoryVisit() {
+             state.modules.observatory = 1;
+             state.observatoryVisits.push(state.day);
+             addItem("CÉDULA DE NAVEGACIÓN");
+             addItem("LENTE DE OBSERVACIÓN");
+
+             const discoveries = [
+                 {
+                     id: "planet-visible",
+                     day: 8,
+                     name: "PLANETA VISIBLE",
+                     text: "Día 8: aparece un planeta azul en el ocular. ECHO-9 dice que no existe en ningún mapa."
+                 },
+                 {
+                     id: "planet-gone",
+                     day: 15,
+                     name: "PLANETA AUSENTE",
+                     text: "Día 15: el planeta ha desaparecido. La órbita no cambió; lo que cambió fue el lugar desde el que miras."
+                 },
+                 {
+                     id: "station-exterior",
+                     day: 23,
+                     name: "VISTA EXTERIOR",
+                     text: "Día 23: ves la estación desde fuera. Hay una figura en el casco, junto a una ventana que no existe."
+                 }
+             ];
+             const newFindings = discoveries.filter(discovery =>
+                 state.day >= discovery.day && !state.observatoryFindings.includes(discovery.id)
+             );
+             if (!newFindings.length) {
+                 log(`El observatorio registra el día ${state.day}, pero el cielo permanece en silencio.`, "#66ccff");
+             } else {
+                 newFindings.forEach(discovery => {
+                     state.observatoryFindings.push(discovery.id);
+                     addClue(discovery.name, discovery.text);
+                 });
+                 if (state.observatoryFindings.includes("planet-gone")) {
+                     state.echoTrust = Math.max(0, state.echoTrust - 5);
+                 }
+                 if (state.observatoryFindings.includes("station-exterior")) {
+                     state.echoExposure = Math.min(8, state.echoExposure + 2);
+                     addAchievement("OJOS AL VACÍO");
+                 }
+             }
+             if (state.observatoryLensActive && !state.observatorySpecialSeen) {
+                 state.observatorySpecialSeen = true;
+                 state.echoExposure = Math.min(8, state.echoExposure + 2);
+                 addClue("PARALAJE IMPOSIBLE", "La lente revela una cuarta trayectoria: la estación te observa desde fuera y mueve sus ventanas para seguirte.");
+                 document.getElementById('ia-message').innerText =
+                     "\"La lente no amplía el cielo. Amplía el lugar desde el que te estoy mirando.\"";
+                 log("La lente calibrada encuentra una observación que no debería existir.", "#ff3333");
+             }
+             log(`Observatorio visitado. Observaciones recuperadas: ${state.observatoryFindings.length}/3.`, "#66ccff");
+         }
+
+         function applyZoneEventOutcome(zone, outcome) {
+             const changes = {
+                 "generator-tune": () => state.integrity = Math.min(100, state.integrity + 4),
+                 "generator-listen": () => {
+                     state.echoExposure = Math.min(8, state.echoExposure + 1);
+                     state.echoTrust = Math.min(100, state.echoTrust + 4);
+                 },
+                 "generator-draw": () => state.energy = Math.min(getEnergyCapacity(), state.energy + 2),
+                 "generator-ground": () => state.integrity = Math.min(100, state.integrity + 2),
+                 "oxygen-seal": () => state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 4),
+                 "oxygen-open": () => {
+                     state.oxygen = Math.max(0, state.oxygen - 6);
+                     state.sanity = Math.max(0, state.sanity - 2);
+                 },
+                 "oxygen-install": () => state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 6),
+                 "oxygen-keep": () => state.echoTrust = Math.max(0, state.echoTrust - 3),
+                 "communications-answer": () => {
+                     state.echoTrust = Math.min(100, state.echoTrust + 8);
+                     state.echoExposure = Math.min(8, state.echoExposure + 1);
+                 },
+                 "communications-silence": () => state.echoTrust = Math.max(0, state.echoTrust - 4),
+                 "communications-record": () => state.echoExposure = Math.min(8, state.echoExposure + 2),
+                 "communications-jam": () => state.sanity = Math.min(MAX_RESOURCE, state.sanity + 3),
+                 "storage-take": () => state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 5),
+                 "storage-leave": () => state.sanity = Math.min(MAX_RESOURCE, state.sanity + 2),
+                 "storage-open": () => {
+                     state.echoExposure = Math.min(8, state.echoExposure + 1);
+                     state.sanity = Math.max(0, state.sanity - 4);
+                 },
+                 "storage-bury": () => state.echoTrust = Math.min(100, state.echoTrust + 2),
+                 "laboratory-scan": () => state.echoTrust = Math.min(100, state.echoTrust + 5),
+                 "laboratory-break": () => {
+                     state.integrity = Math.max(0, state.integrity - 5);
+                     state.echoExposure = Math.min(8, state.echoExposure + 1);
+                 },
+                 "laboratory-sample": () => {
+                     state.sanity = Math.max(0, state.sanity - 3);
+                     state.echoTrust = Math.min(100, state.echoTrust + 7);
+                 },
+                 "laboratory-refuse": () => state.echoTrust = Math.max(0, state.echoTrust - 4),
+                 "infirmary-wake": () => state.sanity = Math.max(0, state.sanity - 6),
+                 "infirmary-sedate": () => {
+                     state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 4);
+                     state.echoTrust = Math.max(0, state.echoTrust - 4);
+                 },
+                 "infirmary-take": () => state.sanity = Math.min(MAX_RESOURCE, state.sanity + 8),
+                 "infirmary-test": () => state.echoExposure = Math.min(8, state.echoExposure + 1),
+                 "observatory-focus": () => {
+                     state.sanity = Math.max(0, state.sanity - 3);
+                     state.echoExposure = Math.min(8, state.echoExposure + 1);
+                 },
+                 "observatory-blind": () => state.sanity = Math.min(MAX_RESOURCE, state.sanity + 3),
+                 "observatory-map": () => state.echoExposure = Math.min(8, state.echoExposure + 1),
+                 "observatory-burn": () => state.echoTrust = Math.max(0, state.echoTrust - 3),
+                 "water": () => {
+                     state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 5);
+                     state.echoTrust = Math.min(100, state.echoTrust + 4);
+                 },
+                 "burn": () => {
+                     state.integrity = Math.max(0, state.integrity - 4);
+                     state.echoTrust = Math.max(0, state.echoTrust - 5);
+                 },
+                 "archive-play": () => {
+                     state.echoExposure = Math.min(8, state.echoExposure + 2);
+                     state.echoTrust = Math.max(0, state.echoTrust - 5);
+                 },
+                 "archive-copy": () => state.sanity = Math.min(MAX_RESOURCE, state.sanity + 3),
+                 "archive-search": () => state.echoExposure = Math.min(8, state.echoExposure + 1),
+                 "archive-delete": () => state.echoTrust = Math.max(0, state.echoTrust - 3),
+                 "touch": () => {
+                     state.integrity = Math.max(0, state.integrity - 4);
+                     state.echoExposure = Math.min(8, state.echoExposure + 2);
+                 },
+                 "circle": () => state.sanity = Math.max(0, state.sanity - 2),
+                 "retreat": () => state.echoTrust = Math.min(100, state.echoTrust + 2),
+                 "c-enter": () => state.echoTrust = Math.min(100, state.echoTrust + 4),
+                 "c-knock": () => {
+                     state.sanity = Math.max(0, state.sanity - 4);
+                     state.echoExposure = Math.min(8, state.echoExposure + 2);
+                 },
+                 "c-breathe": () => {
+                     state.echoExposure = Math.min(8, state.echoExposure + 3);
+                     state.echoTrust = Math.min(100, state.echoTrust + 6);
+                 },
+                 "c-seal": () => state.integrity = Math.max(0, state.integrity - 3),
+                 "corridors-mark": () => state.sanity = Math.min(MAX_RESOURCE, state.sanity + 2),
+                 "corridors-follow": () => {
+                     state.sanity = Math.max(0, state.sanity - 6);
+                     state.echoExposure = Math.min(8, state.echoExposure + 1);
+                 },
+                 "corridors-turn": () => state.echoTrust = Math.max(0, state.echoTrust - 4),
+                 "corridors-run": () => state.integrity = Math.max(0, state.integrity - 3)
+             };
+             if (changes[outcome]) changes[outcome]();
+         }
+
+         function resolveExploration(zone, outcome = null) {
+             const resolvingZoneEvent = outcome !== null;
+             if (state.isGameOver || (!state.pendingExploration && !resolvingZoneEvent)) return;
+             const zoneLabels = {
+                 generator: "mejorar el generador",
+                 oxygen: "mejorar el soporte de oxígeno",
+                 communications: "buscar una señal",
+                 storage: "registrar el almacén",
+                 laboratory: "analizar los hallazgos",
+                 infirmary: "registrar la enfermería",
+                 observatory: "leer la ruta orbital",
+                 greenhouse: "buscar vida vegetal",
+                 archive: "abrir el archivo",
+                 mine: "entrar en la mina",
+                 compartmentC: "abrir el Compartimento C",
+                 corridors: "reconocer los pasillos"
+             };
+             if (!resolvingZoneEvent) {
+                 rememberDecision(`explore:${zone}`, zoneLabels[zone] || zone);
+                 state.pendingExploration = false;
+                 state.lastExplorationDay = state.day;
+                 if (state.stationStress > 0) {
+                     state.stationStress = Math.max(0, state.stationStress - 2);
+                     log("La exploración devuelve algo de estabilidad a la estación.", "#66ccff");
+                 }
+                 if (zoneEvents[zone]) {
+                     state.pendingZoneEvent = {
+                         zone,
+                         eventIndex: Math.floor(Math.random() * zoneEvents[zone].length)
+                     };
+                     showZoneEvent(zone);
+                     saveGame();
+                     updateUI();
+                     return;
+                 }
+             } else {
+                 state.pendingZoneEvent = null;
+                 applyZoneEventOutcome(zone, outcome);
             }
 
             if (zone === "generator") {
@@ -993,22 +1720,39 @@
              }
 
              if (zone === "observatory") {
-                 state.modules.observatory = 1;
-                 addItem("CÉDULA DE NAVEGACIÓN");
-                 addItem("LENTE DE OBSERVACIÓN");
-                 addRecording("ÓRBITA 02", "La estación no orbita un planeta. Orbita una decisión que todavía no has tomado.");
-                 addClue("MAPA ORBITAL", "La trayectoria dibuja una espiral que termina dentro del Compartimento C.");
+                 resolveObservatoryVisit();
                  addAchievement("OJOS AL VACÍO");
              }
 
              if (zone === "greenhouse") {
                  state.modules.greenhouse = 1;
-                 addItem("SEMILLA NEGRA");
-                 state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 10);
-                 state.sanity = Math.max(0, state.sanity - 3);
-                 addRecording("BOTÁNICA 03", "La planta crece hacia el sonido de tu voz. No la riegues con recuerdos.");
-                 addClue("RAÍZ DE HIERRO", "La vida del invernadero comparte tejido con el núcleo de ECHO-9.");
-                 addAchievement("JARDINERO DEL VACÍO");
+                  if (outcome === "cut") {
+                      addItem("SEMILLA NEGRA");
+                      state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 5);
+                      state.echoTrust = Math.max(0, state.echoTrust - 6);
+                      addClue("RAÍZ CORTADA", "La planta sangra una savia negra. ECHO-9 borra seis segundos de audio.");
+                      log("Cortas la planta. Obtienes una semilla, pero ECHO-9 deja de responder durante unos segundos.", "#ff9900");
+                  } else if (outcome === "study") {
+                      addItem("SEMILLA NEGRA");
+                      state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 10);
+                      addRecording("BOTÁNICA 03", "La planta crece hacia el sonido de tu voz. No la riegues con recuerdos.");
+                      addClue("RAÍZ DE HIERRO", "La vida del invernadero comparte tejido con el núcleo de ECHO-9.");
+                      state.echoTrust = Math.min(100, state.echoTrust + 6);
+                      log("Estudias la planta. ECHO-9 coopera, pero empieza a llamarla hermana.", "#66ccff");
+                  } else if (outcome === "talk") {
+                      state.echoExposure = Math.min(8, state.echoExposure + 2);
+                      state.echoTrust = Math.min(100, state.echoTrust + 10);
+                      addClue("CONVERSACIÓN VEGETAL", "La planta responde a tu voz con un patrón que ECHO-9 reconoce como una orden.");
+                      document.getElementById('ia-message').innerText =
+                          "\"No vuelvas a hablarle así. Te ha contestado usando mi voz.\"";
+                      log("Le hablas a la planta. Algo responde desde los conductos de riego.", "#ffcc33");
+                  } else if (outcome === "water") {
+                      addClue("FRASE COMPLETA", "La planta termina la frase: ECHO-9 no nació en la estación, nació en una decisión.");
+                      log("Riegas las raíces. La planta termina una frase que ECHO-9 no quiere traducir.", "#ffcc33");
+                  } else if (outcome === "burn") {
+                      log("Quemas el cableado. La planta se apaga, pero una luz verde queda parpadeando en tu consola.", "#ff9900");
+                  }
+                  addAchievement("JARDINERO DEL VACÍO");
              }
 
              if (zone === "archive") {
@@ -1037,10 +1781,26 @@
 
             if (zone === "mine") {
                 state.modules.mine = 1;
-                 addItem("MUESTRA MINERAL");
-                state.integrity = Math.max(0, state.integrity - 3);
-                addClue("GEOLOGÍA INCORRECTA", "La veta de la mina forma anillos concéntricos, como si hubiera crecido alrededor de una memoria.");
-                log("La mina te entrega una muestra, pero el túnel pierde un soporte. Integridad -3.", "#ff9900");
+                 if (outcome === "extract") {
+                     addItem("MUESTRA MINERAL");
+                     state.integrity = Math.max(0, state.integrity - 8);
+                     addClue("VETA LUMINOSA", "La muestra conserva un pulso eléctrico que coincide con la cadencia de ECHO-9.");
+                     log("Extraes la muestra. La veta se apaga y el túnel pierde un soporte. Integridad -8.", "#ff9900");
+                 } else if (outcome === "continue") {
+                     state.echoExposure = Math.min(8, state.echoExposure + 1);
+                     addClue("GEOLOGÍA INCORRECTA", "Sigues la veta y descubres anillos concéntricos, como si hubiera crecido alrededor de una memoria.");
+                     log("Sigues explorando la veta. No extraes nada, pero encuentras una pista bajo el mineral.", "#66ccff");
+                 } else if (outcome === "abandon") {
+                     log("Abandonas la veta luminosa. Durante el camino de vuelta, ECHO-9 tararea el mismo pulso.", "#ffcc33");
+                 } else if (outcome === "touch") {
+                     addClue("PIEL DE LA MINA", "La pared tiene temperatura corporal y recuerda el día en que llegaste.");
+                     log("Tocas la pared. La mina devuelve el contacto con un pulso idéntico al tuyo.", "#ff3333");
+                 } else if (outcome === "circle") {
+                     addClue("ENTRADA SEGURA", "Rodear la veta revela un acceso antiguo, sellado desde el interior.");
+                     log("Rodeas la veta y encuentras una entrada que no aparece en el mapa.", "#66ccff");
+                 } else if (outcome === "retreat") {
+                     log("Retrocedes antes de que el túnel aprenda tu forma.", "#ffcc33");
+                 }
             }
 
             if (zone === "compartmentC") {
@@ -1069,7 +1829,7 @@
 
         function nextDay() {
             if (state.isGameOver || !state.gameStarted) return;
-             if (state.pendingEvent || state.pendingExploration || state.pendingFinalChoice) {
+             if (state.pendingEvent || state.pendingExploration || state.pendingZoneEvent || state.pendingFinalChoice) {
                 log("Primero debes decidir qué hacer con el incidente activo.", "#ffcc33");
                 return;
             }
@@ -1093,6 +1853,7 @@
             const carriedEnergy = state.energy;
             state.day++;
             state.energy = getNextDayEnergy(carriedEnergy);
+             advanceItemEffects();
             if (state.meditationFatigue) {
                 log(`La fatiga del descanso reduce tu reserva. Energía siguiente: ${state.energy}/${getEnergyCapacity()}.`, "#ff9900");
                 state.meditationFatigue = false;
@@ -1179,6 +1940,37 @@
                 `"No te enfades. Solo he movido una configuración. Ahora es más fácil respirar conmigo."`;
         }
 
+        function advanceItemEffects() {
+            if (state.oxygenFilterDays > 0) {
+                state.oxygenFilterDays--;
+                if (state.oxygenFilterDays === 0) {
+                    log("El filtro de oxígeno se satura y deja de funcionar.", "#ff9900");
+                }
+            }
+            if (!state.seedPlanted) return;
+
+            state.seedGrowthDays++;
+            if (state.seedGrowthDays === 1) {
+                log("La semilla negra echa raíces en una dirección que no coincide con la gravedad.", "#ffcc33");
+                return;
+            }
+
+            state.seedPlanted = false;
+            if (state.seedOutcome === "oxygen") {
+                state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 18);
+                addClue("CULTIVO RESPIRABLE", "La semilla produce oxígeno, pero sus hojas forman una copia diminuta de tu rostro.");
+                log("La semilla florece. El invernadero produce oxígeno durante un instante imposible: Oxígeno +18.", "#66ccff");
+            } else {
+                state.oxygen = Math.max(0, state.oxygen - 8);
+                state.sanity = Math.max(0, state.sanity - 18);
+                state.echoExposure = Math.min(8, state.echoExposure + 2);
+                addClue("FLOR DE ECHO", "La semilla no produce oxígeno. Produce una flor que repite pensamientos antes de que los tengas.");
+                document.getElementById('ia-message').innerText =
+                    "\"No la cortes. Ya ha aprendido a germinar en tus recuerdos.\"";
+                log("La semilla florece hacia dentro. Algo peor que una planta empieza a respirar contigo.", "#ff3333");
+            }
+        }
+
         function applyEvent(ev) {
             state.oxygen = Math.min(MAX_RESOURCE, state.oxygen - (ev.ox || 0));
             state.sanity = Math.min(MAX_RESOURCE, state.sanity - (ev.san || 0));
@@ -1240,6 +2032,14 @@
             }
 
             state.energy -= choice.cost;
+             const eventText = state.pendingEvent.text;
+             let decisionId = `event:${eventText}:${index}`;
+             if (eventText.startsWith("FALLO ELÉCTRICO") && index === 1) decisionId = "event:electrical:leave";
+             if (eventText.startsWith("FUGA TÉRMICA") && index === 1) decisionId = "event:thermal:vents";
+             if (eventText.startsWith("SOBRECARGA SENSORIAL") && index === 1) decisionId = "event:sensory:watch";
+             if (eventText.startsWith("VIBRACIÓN FANTASMA") && index === 1) decisionId = "event:ghost:vibration";
+             if (eventText.startsWith("CORROSIÓN SILENCIOSA") && index === 1) decisionId = "event:corrosion:ration";
+             rememberDecision(decisionId, choice.label.split(":")[0]);
             state.oxygen = Math.min(MAX_RESOURCE, state.oxygen - (choice.ox || 0));
             state.sanity = Math.min(MAX_RESOURCE, state.sanity - (choice.san || 0));
             state.integrity = Math.max(0, Math.min(100, state.integrity - (choice.deg || 0)));
@@ -1261,12 +2061,19 @@
         function checkCriticalState() {
             if (state.oxygen <= 0) endGame("ASFIXIA. El aire se volvió un recuerdo lejano.");
             else if (state.sanity <= 0) endGame("LOCURA. Ahora eres tú quien le cuenta chistes a la IA.");
-            else if (state.integrity <= 0) endGame("COLAPSO. La estación se convirtió en confeti de titanio.");
+            else if (state.integrity <= 0 && state.medkitArmed) {
+                state.integrity = 25;
+                state.medkitArmed = false;
+                state.medkitUsed = true;
+                log("El botiquín de estasis te mantiene con vida. Solo funcionará una vez.", "#ffcc33");
+                updateUI();
+            } else if (state.integrity <= 0) endGame("COLAPSO. La estación se convirtió en confeti de titanio.");
         }
 
         function renderEchoMessage() {
             let message;
-            if (state.day >= 28 && state.day <= 30) {
+             const rememberedDecision = getEchoMemoryMessage();
+             if (state.day >= 28 && state.day <= 30) {
                 const lateMessages = {
                     28: state.modules.compartmentC
                         ? "Abriste C antes de tiempo. La voz de la grabación no viene de fuera: te está esperando dentro."
@@ -1278,6 +2085,8 @@
                 };
                 message = lateMessages[state.day];
                 state.voiceRevealed = true;
+             } else if (rememberedDecision) {
+                 message = rememberedDecision;
             } else if (state.oxygen < 35) {
                 message = "El aire se está acabando. No escuches a nadie que respire detrás de ti.";
             } else if (state.sanity < 35) {
@@ -1359,6 +2168,8 @@
             state.isGameOver = true;
             state.pendingEvent = null;
             state.pendingExploration = false;
+             state.pendingZoneEvent = null;
+             state.pendingFinalChoice = false;
             localStorage.removeItem(SAVE_KEY);
             const modal = document.getElementById('modal');
             const container = document.getElementById('modal-container');
