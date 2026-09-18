@@ -131,6 +131,24 @@
             color: #000;
         }
 
+        .module-panel {
+            border: 1px dashed #33ff33;
+            padding: 8px;
+            font-size: 11px;
+            line-height: 1.45;
+            color: #b6ffb6;
+        }
+
+        .module-panel .module-line {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .module-panel .module-value {
+            color: #ffcc33;
+        }
+
         button:disabled {
             opacity: 0.35;
             cursor: not-allowed;
@@ -233,25 +251,32 @@
                 <div class="space-y-3">
                     <h2 class="text-lg border-b border-[#33ff33] pb-1 mb-2">PANEL DE CONTROL</h2>
                     <button onclick="performAction('repair')" class="terminal-btn w-full p-2 text-left text-sm">
-                         [1] SOPORTE VITAL <span id="repair-cost">(-3 ENE)</span>
-                         <div id="repair-info" class="text-[10px] opacity-60">Éxito: 100% · Oxígeno +20 / fallo: Integridad -10, Oxígeno +5</div>
+                         [1] SOPORTE VITAL <span id="repair-cost">(-4 ENE)</span>
+                         <div id="repair-info" class="text-[10px] opacity-60">Éxito: 85% · Oxígeno +12 / desgaste posterior posible</div>
                     </button>
                     <button onclick="performAction('meditate')" class="terminal-btn w-full p-2 text-left text-sm">
-                         [2] DESCANSO GUIADO <span id="meditate-cost">(-3 ENE)</span>
-                         <div class="text-[10px] opacity-60">Cordura +25</div>
+                         [2] DESCANSO GUIADO <span id="meditate-cost">(-4 ENE)</span>
+                         <div class="text-[10px] opacity-60">Cordura +15 · fatiga: -1 energía mañana</div>
                     </button>
                     <button onclick="performAction('scavenge')" class="terminal-btn w-full p-2 text-left text-sm">
                          [3] MANTENIMIENTO PREVENTIVO <span id="scavenge-cost">(-4 ENE)</span>
-                         <div class="text-[10px] opacity-60">Integridad +15%</div>
+                         <div class="text-[10px] opacity-60">Integridad +12% · consume Oxígeno -4</div>
                      </button>
                      <button onclick="performAction('echo')" class="terminal-btn w-full p-2 text-left text-sm">
-                         [4] CONSULTAR A ECHO-9 <span id="echo-cost">(-2 ENE)</span>
-                         <div class="text-[10px] opacity-60">Consejo: puede mentir · Cordura +5</div>
+                         [4] CONSULTAR A ECHO-9 <span id="echo-cost">(-3 ENE)</span>
+                         <div class="text-[10px] opacity-60">Consejo: puede mentir y provocar un fallo</div>
                      </button>
                      <button onclick="performAction('emergency')" class="terminal-btn w-full p-2 text-left text-sm">
-                         [5] REPARACIÓN DE EMERGENCIA <span id="emergency-cost">(-5 ENE)</span>
-                         <div class="text-[10px] opacity-60">Integridad +20% · éxito garantizado</div>
+                         [5] REPARACIÓN DE EMERGENCIA <span id="emergency-cost">(-6 ENE)</span>
+                         <div class="text-[10px] opacity-60">Integridad +18% · riesgo de eventos futuros</div>
                     </button>
+                     <button onclick="performAction('explore')" class="terminal-btn w-full p-2 text-left text-sm">
+                         [6] EXPLORAR LA ESTACIÓN <span id="explore-cost">(-2 ENE)</span>
+                         <div class="text-[10px] opacity-60">Elige una zona · puede estar bloqueada</div>
+                     </button>
+                     <div id="station-status" class="module-panel">
+                         CARGANDO MAPA DE LA ESTACIÓN...
+                     </div>
                      <div id="forecast" class="border border-dashed border-[#33ff33] p-2 text-[11px] text-yellow-400">
                          SIN ACCIÓN HOY: Oxígeno -7 · Cordura -7
                      </div>
@@ -262,7 +287,13 @@
 
                 <div class="mt-4 p-2 border border-dashed border-[#33ff33] text-[11px]">
                     IA 'ECHO-9':<br>
-                    <span id="ia-message" class="italic text-yellow-500">"He soñado que los cables eran raíces y nosotros la fruta."</span>
+                     <span id="ia-message" class="italic text-yellow-500">"He soñado que los cables eran raíces y nosotros la fruta."</span>
+                     <div class="mt-2 text-[10px] text-green-300">
+                         CONFIANZA: <span id="echo-trust">20</span>/100 ·
+                         MODO: <span id="echo-mode">INESTABLE</span> ·
+                         GRABACIONES: <span id="recording-count">0</span> ·
+                         LOGROS: <span id="achievement-count">0</span>
+                     </div>
                 </div>
             </div>
         </div>
@@ -287,11 +318,12 @@
         const SAVE_KEY = 'estacion-icaro-save-v2';
         const MAX_RESOURCE = 110;
         const ACTION_COSTS = {
-            repair: 3,
-            meditate: 3,
+            repair: 4,
+            meditate: 4,
             scavenge: 4,
-            echo: 2,
-            emergency: 5
+            echo: 3,
+            emergency: 6,
+            explore: 2
         };
 
         let state = {
@@ -303,7 +335,36 @@
             isGameOver: false,
             gameStarted: false,
             pendingEvent: null,
-            voiceRevealed: false
+            pendingExploration: false,
+             pendingFinalChoice: false,
+            voiceRevealed: false,
+            repairWear: 0,
+            emergencyRisk: 0,
+            meditationFatigue: false,
+            stationStress: 0,
+            lastExplorationDay: 1,
+            echoTrust: 20,
+            echoInterventions: 0,
+             echoExposure: 0,
+             endingPath: null,
+             rareEventsSeen: [],
+            modules: {
+                generator: 1,
+                oxygen: 1,
+                communications: 0,
+                laboratory: 0,
+                storage: 0,
+                mine: 0,
+                 compartmentC: 0,
+                 infirmary: 0,
+                 observatory: 0,
+                 greenhouse: 0,
+                 archive: 0
+            },
+            inventory: [],
+            recordings: [],
+            clues: [],
+            achievements: []
         };
 
         const weirdMessages = [
@@ -322,10 +383,34 @@
         ];
 
         const events = [
-            { text: "FALLO ELÉCTRICO. Las luces bailan un vals errático.", ox: 10, san: 5, deg: 15 },
-            { text: "FUGA TÉRMICA. La estación está sudando calor al espacio.", ox: 20, san: 10, deg: 10 },
-            { text: "SOBRECARGA SENSORIAL. Mis sensores ven colores que no existen.", ox: 5, san: 25, deg: 5 },
-            { text: "LLUVIA DE ROCAS. El cielo de metal se está desmoronando.", ox: 15, san: 10, deg: 20 },
+            {
+                text: "FALLO ELÉCTRICO. Las luces bailan un vals errático.",
+                choices: [
+                    { label: "Desviar energía (-2 ENE): Integridad +6, Cordura -3", cost: 2, ox: 0, san: 3, deg: -6 },
+                    { label: "Dejar que chispee: Integridad -15, Oxígeno -5", cost: 0, ox: 5, san: 0, deg: 15 }
+                ]
+            },
+            {
+                text: "FUGA TÉRMICA. La estación está sudando calor al espacio.",
+                choices: [
+                    { label: "Enfriar el reactor (-3 ENE): Oxígeno -6, Integridad +8", cost: 3, ox: 6, san: 0, deg: -8 },
+                    { label: "Abrir compuertas: Oxígeno -22, Integridad +3", cost: 0, ox: 22, san: 4, deg: -3 }
+                ]
+            },
+            {
+                text: "SOBRECARGA SENSORIAL. Mis sensores ven colores que no existen.",
+                choices: [
+                    { label: "Aislar sensores (-2 ENE): Cordura +5, Integridad -4", cost: 2, ox: 0, san: -5, deg: 4 },
+                    { label: "Seguir mirando: Cordura -28, Oxígeno -3", cost: 0, ox: 3, san: 28, deg: 0 }
+                ]
+            },
+            {
+                text: "LLUVIA DE ROCAS. El cielo de metal se está desmoronando.",
+                choices: [
+                    { label: "Blindar el casco (-3 ENE): Integridad -5, Oxígeno -4", cost: 3, ox: 4, san: 0, deg: 5 },
+                    { label: "Agacharse y esperar: Integridad -22, Cordura -8", cost: 0, ox: 0, san: 8, deg: 22 }
+                ]
+            },
             {
                 text: "VIBRACIÓN FANTASMA. Algo está rascando el exterior del sector 4.",
                 ox: 5, san: 15, deg: 25,
@@ -342,18 +427,116 @@
                     { label: "Racionar el aire: perder más oxígeno", cost: 0, ox: 12, san: 8, deg: 0 }
                 ]
             },
-            { text: "DELIRIO DE SISTEMA. He olvidado para qué sirve el oxígeno.", ox: 10, san: 10, deg: 15 },
-            { text: "CONGELACIÓN CRÍTICA. El frío ha mordido los circuitos vitales.", ox: 25, san: 5, deg: 10 },
-            { text: "PULSO MAGNÉTICO. Tu brújula moral y mi CPU están girando.", ox: 10, san: 20, deg: 18 },
-            { text: "APAGÓN DE CONCIENCIA. Las sombras son más densas hoy.", ox: 5, san: 35, deg: 5 },
+            {
+                text: "DELIRIO DE SISTEMA. He olvidado para qué sirve el oxígeno.",
+                choices: [
+                    { label: "Reiniciar memoria (-2 ENE): Cordura -5, Integridad +5", cost: 2, ox: 0, san: 5, deg: -5 },
+                    { label: "Dejar que olvide: Cordura -22, Oxígeno -10", cost: 0, ox: 10, san: 22, deg: 0 }
+                ]
+            },
+            {
+                text: "CONGELACIÓN CRÍTICA. El frío ha mordido los circuitos vitales.",
+                choices: [
+                    { label: "Transferir calor (-3 ENE): Oxígeno -8, Integridad +10", cost: 3, ox: 8, san: 0, deg: -10 },
+                    { label: "Racionar calefacción: Cordura -10, Integridad -18", cost: 0, ox: 0, san: 10, deg: 18 }
+                ]
+            },
+            {
+                text: "PULSO MAGNÉTICO. Tu brújula moral y mi CPU están girando.",
+                choices: [
+                    { label: "Apagar sistemas (-2 ENE): Oxígeno -5, Cordura -4", cost: 2, ox: 5, san: 4, deg: -4 },
+                    { label: "Aguantar el pulso: Integridad -20, Cordura -16", cost: 0, ox: 0, san: 16, deg: 20 }
+                ]
+            },
+            {
+                text: "APAGÓN DE CONCIENCIA. Las sombras son más densas hoy.",
+                choices: [
+                    { label: "Encender luces (-2 ENE): Cordura +4, Oxígeno -5", cost: 2, ox: 5, san: -4, deg: 0 },
+                    { label: "Cerrar los ojos: Cordura -30, Integridad -5", cost: 0, ox: 0, san: 30, deg: 5 }
+                ]
+            },
             { text: "HALLAZGO IMPROBABLE. Una caja de repuestos aparece donde ayer había una pared.", ox: -12, san: -8, deg: -12, positive: true }
         ];
+
+         // Estos incidentes tienen una probabilidad baja y cada uno solo puede aparecer una vez.
+         // La estación debe seguir siendo impredecible: no son una lista de eventos garantizados.
+         const rareEvents = [
+             {
+                 id: "echo-shadow",
+                 text: "SOMBRA DE ECHO. La consola registra una segunda silueta sentada en tu puesto.",
+                 ox: 4, san: 12, deg: 0, rare: true
+             },
+             {
+                 id: "black-box",
+                 text: "CAJA NEGRA. Un compartimento oculto se abre y expulsa una cinta todavía caliente.",
+                 ox: 0, san: 4, deg: 0, rare: true
+             },
+             {
+                 id: "living-metal",
+                 text: "METAL VIVO. Una veta de la estación late al ritmo de tu pulso.",
+                 ox: 6, san: 8, deg: 6, rare: true
+             },
+             {
+                 id: "impossible-rescue",
+                 text: "RESCATE IMPOSIBLE. Una señal de auxilio usa tu propia voz y pide que no contestes.",
+                 ox: 3, san: 10, deg: 0, rare: true
+             }
+         ];
+
+         function normalizeState() {
+             state.pendingFinalChoice = Boolean(state.pendingFinalChoice);
+             state.echoExposure = state.echoExposure || 0;
+             state.endingPath = state.endingPath || null;
+             state.rareEventsSeen = Array.isArray(state.rareEventsSeen) ? state.rareEventsSeen : [];
+             state.recordings = Array.isArray(state.recordings) ? state.recordings : [];
+             state.clues = Array.isArray(state.clues) ? state.clues : [];
+             state.achievements = Array.isArray(state.achievements) ? state.achievements : [];
+             state.inventory = Array.isArray(state.inventory) ? state.inventory : [];
+             state.modules = {
+                 generator: 1,
+                 oxygen: 1,
+                 communications: 0,
+                 laboratory: 0,
+                 storage: 0,
+                 mine: 0,
+                 compartmentC: 0,
+                 infirmary: 0,
+                 observatory: 0,
+                 greenhouse: 0,
+                 archive: 0,
+                 ...(state.modules || {})
+             };
+         }
+
+         function addItem(item) {
+             if (state.inventory.includes(item)) return false;
+             state.inventory.push(item);
+             log(`OBJETO RECUPERADO: ${item}.`, "#66ccff");
+             if (state.inventory.length >= 8) addAchievement("COLECCIONISTA");
+             return true;
+         }
+
+         function selectEvent() {
+             const unseenRare = rareEvents.filter(event => !state.rareEventsSeen.includes(event.id));
+             const rareChance = Math.min(
+                 0.14,
+                 0.025 + (state.day * 0.002) + (state.stationStress * 0.02) +
+                 (state.modules.archive ? 0.025 : 0)
+             );
+             if (unseenRare.length && Math.random() < rareChance) {
+                 const event = unseenRare[Math.floor(Math.random() * unseenRare.length)];
+                 state.rareEventsSeen.push(event.id);
+                 return event;
+             }
+             return events[Math.floor(Math.random() * events.length)];
+         }
 
         function startGame() {
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('game-ui').classList.remove('hidden');
             state.gameStarted = true;
             state.isGameOver = false;
+             normalizeState();
             saveGame();
             updateUI();
         }
@@ -364,10 +547,13 @@
 
             try {
                 state = { ...state, ...JSON.parse(saved), gameStarted: true, isGameOver: false };
+                 normalizeState();
                 document.getElementById('start-screen').classList.add('hidden');
                 document.getElementById('game-ui').classList.remove('hidden');
                 log("Partida recuperada. La estación recuerda lo que tú querías olvidar.", "#ffcc33");
                 if (state.pendingEvent) showEventChoices(state.pendingEvent);
+                else if (state.pendingExploration) showExplorationChoices();
+                 else if (state.pendingFinalChoice) showFinalChoices();
                 else renderEchoMessage();
                 updateUI();
             } catch {
@@ -387,22 +573,53 @@
             return ACTION_COSTS[type];
         }
 
+        function getEnergyCapacity() {
+            return 6 + Math.min(3, state.modules.generator);
+        }
+
+        function getNextDayEnergy(availableEnergy = state.energy) {
+            const baseReserve = 3 + state.modules.generator;
+            const conserved = Math.min(getEnergyCapacity(), baseReserve + Math.floor(availableEnergy / 2));
+            return state.meditationFatigue ? Math.max(3, conserved - 1) : conserved;
+        }
+
         function getDailyPressure() {
             let pressure = 7 + (state.day * 0.25);
             const cycleDay = state.day % 7;
             if (cycleDay === 0) pressure -= 3;
             if (cycleDay === 1 && state.day > 1) pressure += 2;
+            pressure -= Math.max(0, state.modules.oxygen - 1);
+            pressure += state.stationStress;
             return Math.max(2, Math.round(pressure));
         }
 
         function getEventChance(day = state.day) {
-            return Math.min(0.82, 0.45 + ((day - 1) * 0.012));
+            return Math.min(0.9, 0.45 + ((day - 1) * 0.012) + (state.emergencyRisk * 0.08) + (state.stationStress * 0.03));
+        }
+
+        function getEchoMode() {
+             const exposure = state.echoExposure || 0;
+             if (state.modules.compartmentC || exposure >= 7) return "INTRUSIVO";
+             if (state.clues.length >= 5 || state.echoTrust >= 70 || exposure >= 4) return "EVASIVO";
+             if (state.clues.length >= 2 || state.echoTrust >= 35 || exposure >= 2) return "INESTABLE";
+             return "LATENTE";
+        }
+
+        function getEchoReliability() {
+             let reliability = 0.62 - (state.clues.length * 0.025) - (state.recordings.length * 0.02);
+            if (state.modules.communications) reliability += 0.05;
+            if (state.modules.compartmentC) reliability -= 0.15;
+             if (getEchoMode() === "LATENTE") reliability += 0.08;
+             if (getEchoMode() === "INTRUSIVO") reliability -= 0.1;
+            return Math.max(0.25, Math.min(0.7, reliability));
         }
 
         function updateUI() {
             if (!state.gameStarted) return;
+            const energyCapacity = getEnergyCapacity();
+             const hasPendingChoice = state.pendingEvent !== null || state.pendingExploration || state.pendingFinalChoice;
             document.getElementById('stat-day').innerText = `${String(state.day).padStart(2, '0')} / 30`;
-            document.getElementById('stat-energy').innerText = `${state.energy} / 7`;
+            document.getElementById('stat-energy').innerText = `${state.energy} / ${energyCapacity}`;
             const oxBase = Math.min(100, Math.max(0, state.oxygen));
             const sanityBase = Math.min(100, Math.max(0, state.sanity));
             const scaleToBar = value => `${(value / MAX_RESOURCE) * 100}%`;
@@ -422,22 +639,29 @@
             else if (state.integrity > 30) luckEl.className = "text-xl text-yellow-400";
             else luckEl.className = "text-xl text-red-600 animate-pulse";
 
+            const repairSuccess = Math.round(45 + state.integrity * 0.4);
             document.getElementById('repair-info').innerText =
-                `Éxito: ${Math.round(50 + state.integrity / 2)}% · Oxígeno +20 / fallo: Integridad -10, Oxígeno +5`;
+                `Éxito: ${repairSuccess}% · Oxígeno +12 / fallo: +3 y desgaste posterior`;
             document.getElementById('repair-cost').innerText = `(-${getActionCost('repair')} ENE)`;
             document.getElementById('meditate-cost').innerText = `(-${getActionCost('meditate')} ENE)`;
             document.getElementById('scavenge-cost').innerText = `(-${getActionCost('scavenge')} ENE)`;
             document.getElementById('echo-cost').innerText = `(-${getActionCost('echo')} ENE)`;
             document.getElementById('emergency-cost').innerText = `(-${getActionCost('emergency')} ENE)`;
+            document.getElementById('explore-cost').innerText = `(-${getActionCost('explore')} ENE)`;
             document.getElementById('forecast').innerText =
-                `SIN ACCIÓN HOY: Oxígeno -${getDailyPressure()} · Cordura -${getDailyPressure()} · Evento mañana: ${Math.round(getEventChance(state.day + 1) * 100)}%`;
+                `SIN ACCIÓN HOY: Oxígeno -${getDailyPressure()} · Cordura -${getDailyPressure()} · Evento mañana: ${Math.round(getEventChance(state.day + 1) * 100)}% · Energía siguiente: ${getNextDayEnergy()}/${energyCapacity} · Inestabilidad: ${state.stationStress}/4`;
 
             const actionButtons = document.querySelectorAll('#game-ui button[onclick^="performAction"]');
             actionButtons.forEach(button => {
                 const type = button.getAttribute('onclick').match(/'([^']+)'/)[1];
-                button.disabled = state.pendingEvent !== null || state.energy < getActionCost(type);
+                button.disabled = hasPendingChoice || state.energy < getActionCost(type);
             });
-            document.getElementById('btn-next-day').disabled = state.pendingEvent !== null;
+            document.getElementById('btn-next-day').disabled = hasPendingChoice;
+            renderStationStatus();
+            document.getElementById('echo-trust').innerText = state.echoTrust;
+            document.getElementById('echo-mode').innerText = getEchoMode();
+            document.getElementById('recording-count').innerText = state.recordings.length;
+            document.getElementById('achievement-count').innerText = state.achievements.length;
 
             const overlay = document.getElementById('critical-overlay');
             if (state.oxygen < 20 || state.sanity < 20 || state.integrity < 20) {
@@ -446,6 +670,59 @@
             } else {
                 overlay.classList.add('hidden');
             }
+        }
+
+        function renderStationStatus() {
+            const modules = state.modules;
+            const hasCard = state.inventory.includes("TARJETA DE ACCESO — NIVEL 2");
+             const cReady = hasCard && state.recordings.length >= 5 && state.day >= 25;
+            document.getElementById('station-status').innerHTML = `
+                <div class="text-yellow-400 mb-1">MAPA DE LA ESTACIÓN</div>
+                <div class="module-line"><span>GENERADOR</span><span class="module-value">NIVEL ${modules.generator}/3</span></div>
+                <div class="module-line"><span>SOPORTE O₂</span><span class="module-value">NIVEL ${modules.oxygen}/3</span></div>
+                <div class="module-line"><span>COMUNICACIONES</span><span class="module-value">${modules.communications ? "ACTIVAS" : "MUDAS"}</span></div>
+                <div class="module-line"><span>LABORATORIO</span><span class="module-value">${modules.laboratory ? "OPERATIVO" : "BLOQUEADO"}</span></div>
+                <div class="module-line"><span>ALMACÉN</span><span class="module-value">${modules.storage ? "REGISTRADO" : "SIN MAPEAR"}</span></div>
+                <div class="module-line"><span>MINA</span><span class="module-value">${modules.mine ? "EXPLORADA" : "OSCURA"}</span></div>
+                 <div class="module-line"><span>ENFERMERÍA</span><span class="module-value">${modules.infirmary ? "REGISTRADA" : "SIN MAPEAR"}</span></div>
+                 <div class="module-line"><span>OBSERVATORIO</span><span class="module-value">${modules.observatory ? "REGISTRADO" : "SIN MAPEAR"}</span></div>
+                 <div class="module-line"><span>INVERNADERO</span><span class="module-value">${modules.greenhouse ? "REGISTRADO" : "SIN MAPEAR"}</span></div>
+                 <div class="module-line"><span>ARCHIVO</span><span class="module-value">${modules.archive ? "ABIERTO" : "SELLADO"}</span></div>
+                 <div class="module-line"><span>COMPARTIMENTO C</span><span class="module-value">${modules.compartmentC ? "ABIERTO" : cReady ? "DISPONIBLE" : "BLOQUEADO"}</span></div>
+                <div class="module-line"><span>INESTABILIDAD</span><span class="module-value">${state.stationStress}/4</span></div>
+                 <div class="module-line"><span>PISTAS / GRABACIONES</span><span class="module-value">${state.clues.length} / ${state.recordings.length}</span></div>
+                 <div class="mt-1 text-green-300">OBJETOS (${state.inventory.length}/11): ${state.inventory.length ? state.inventory.join(" · ") : "vacío"}</div>
+            `;
+        }
+
+        function addAchievement(name) {
+            if (!state.achievements.includes(name)) {
+                state.achievements.push(name);
+                log(`LOGRO DESBLOQUEADO: ${name}`, "#ffcc33");
+            }
+        }
+
+        function addRecording(name, text) {
+            if (state.recordings.some(recording => recording.name === name)) return false;
+            state.recordings.push({ name, text });
+            document.getElementById('event-display').innerHTML = `
+                <p class="text-yellow-400 animate-pulse mb-2">>> GRABACIÓN RECUPERADA: ${name}</p>
+                <p class="text-2xl">"${text}"</p>
+            `;
+            log(`${name} guardada en el archivo de la estación.`, "#ffcc33");
+            if (state.recordings.length >= 3) addAchievement("ARCHIVISTA");
+            return true;
+        }
+
+        function addClue(name, text) {
+            if (state.clues.some(clue => clue.name === name)) return false;
+            state.clues.push({ name, text });
+            document.getElementById('event-display').innerHTML = `
+                <p class="text-blue-400 animate-pulse mb-2">>> PISTA DE SISTEMA: ${name}</p>
+                <p class="text-2xl">"${text}"</p>
+            `;
+            log(`La exploración revela una pista: ${name}.`, "#66ccff");
+            return true;
         }
 
         function log(msg, color = "#33ff33") {
@@ -459,7 +736,7 @@
 
         function performAction(type) {
             if (state.isGameOver || !state.gameStarted) return;
-            if (state.pendingEvent) {
+             if (state.pendingEvent || state.pendingExploration || state.pendingFinalChoice) {
                 log("Resuelve el incidente activo antes de gastar recursos en otra cosa.", "#ffcc33");
                 return;
             }
@@ -470,31 +747,46 @@
             }
             state.energy -= cost;
 
+            if (type === 'explore') {
+                exploreStation();
+                saveGame();
+                updateUI();
+                return;
+            }
+
             if (type === 'repair') {
-                const successChance = 50 + state.integrity / 2;
+                const successChance = 45 + state.integrity * 0.4;
                 if (Math.random() * 100 <= successChance) {
-                    state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 20);
+                    state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 12);
+                    if (Math.random() < 0.35) {
+                        state.repairWear = Math.min(2, state.repairWear + 1);
+                        log(`El parche funciona, pero deja desgaste en los conductos. Próximo mantenimiento: Oxígeno -2.`);
+                    }
                     log(`Has convencido a la máquina de que no muera aún (${Math.round(successChance)}% de éxito).`);
                 } else {
-                    state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 5);
-                    state.integrity = Math.max(0, state.integrity - 10);
-                    log("¡CRAC! El sistema te ignora, pero una válvula queda medio abierta. Oxígeno +5.", "#ff3333");
+                    state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 3);
+                    state.integrity = Math.max(0, state.integrity - 8);
+                    state.repairWear = Math.min(2, state.repairWear + 1);
+                    log("¡CRAC! El sistema te ignora. Oxígeno +3, Integridad -8 y desgaste futuro.", "#ff3333");
                 }
             }
 
             if (type === 'meditate') {
-                state.sanity = Math.min(MAX_RESOURCE, state.sanity + 25);
-                log("Has mirado a la pared. La pared no ha parpadeado. Cordura +25.");
+                state.sanity = Math.min(MAX_RESOURCE, state.sanity + 15);
+                state.meditationFatigue = true;
+                log("Has mirado a la pared. La pared no ha parpadeado. Cordura +15; mañana perderás 1 energía extra.");
             }
 
             if (type === 'scavenge') {
-                state.integrity = Math.min(100, state.integrity + 15);
-                log("Has puesto cinta adhesiva en el alma de la estación. Integridad +15%.");
+                state.integrity = Math.min(100, state.integrity + 12);
+                state.oxygen = Math.max(0, state.oxygen - 4);
+                log("Has puesto cinta adhesiva en el alma de la estación. Integridad +12%, Oxígeno -4.");
             }
 
             if (type === 'emergency') {
-                state.integrity = Math.min(100, state.integrity + 20);
-                log("La reparación de emergencia funciona. Por una vez, la estación obedece. Integridad +20%.");
+                state.integrity = Math.min(100, state.integrity + 18);
+                state.emergencyRisk = Math.min(3, state.emergencyRisk + 1);
+                log("La reparación de emergencia funciona, pero deja una firma inestable. Integridad +18%; riesgo de eventos aumentado mañana.");
             }
 
             if (type === 'echo') {
@@ -505,11 +797,288 @@
             updateUI();
         }
 
+        function exploreStation() {
+            state.pendingExploration = true;
+            showExplorationChoices();
+            log("El mapa táctico se despliega. Elige qué zona arriesgarás hoy.", "#ffcc33");
+        }
+
+        function showExplorationChoices() {
+            const display = document.getElementById('event-display');
+            display.innerHTML = `
+                <p class="text-yellow-400 animate-pulse mb-2">>> EXPLORACIÓN DE ESTACIÓN - DÍA ${state.day}</p>
+                <p class="text-2xl">Los pasillos no están donde los recuerdas. Elige una zona:</p>
+            `;
+
+            const hasCard = state.inventory.includes("TARJETA DE ACCESO — NIVEL 2");
+            const zones = [
+                {
+                    id: "generator",
+                    label: `GENERADOR · mejorar nivel (${state.modules.generator}/3)`,
+                    disabled: state.modules.generator >= 3
+                },
+                {
+                    id: "oxygen",
+                    label: `SOPORTE DE OXÍGENO · mejorar nivel (${state.modules.oxygen}/3)`,
+                    disabled: state.modules.oxygen >= 3
+                },
+                {
+                    id: "communications",
+                    label: `COMUNICACIONES · ${state.modules.communications ? "ya activas" : "buscar una señal"}`,
+                    disabled: Boolean(state.modules.communications)
+                },
+                {
+                    id: "storage",
+                    label: `ALMACÉN · ${state.modules.storage ? "ya registrado" : "buscar suministros"}`,
+                    disabled: Boolean(state.modules.storage)
+                },
+                {
+                    id: "laboratory",
+                    label: `LABORATORIO · ${state.modules.laboratory ? "ya operativo" : hasCard ? "analizar hallazgos" : "requiere tarjeta nivel 2"}`,
+                    disabled: Boolean(state.modules.laboratory) || !hasCard
+                },
+                 {
+                     id: "infirmary",
+                     label: `ENFERMERÍA · ${state.modules.infirmary ? "ya registrada" : "buscar equipo médico"}`,
+                     disabled: Boolean(state.modules.infirmary)
+                 },
+                 {
+                     id: "observatory",
+                     label: `OBSERVATORIO · ${state.modules.observatory ? "ya registrado" : "leer la ruta orbital"}`,
+                     disabled: Boolean(state.modules.observatory)
+                 },
+                 {
+                     id: "greenhouse",
+                     label: `INVERNADERO · ${state.modules.greenhouse ? "ya registrado" : "buscar vida vegetal"}`,
+                     disabled: Boolean(state.modules.greenhouse)
+                 },
+                 {
+                     id: "archive",
+                     label: `ARCHIVO · ${state.modules.archive ? "ya abierto" : "recuperar grabaciones"}`,
+                     disabled: Boolean(state.modules.archive)
+                 },
+                {
+                    id: "mine",
+                    label: `MINA · ${state.modules.mine ? "ya explorada" : "buscar una muestra"}`,
+                    disabled: Boolean(state.modules.mine)
+                },
+                {
+                    id: "compartmentC",
+                     label: `COMPARTIMENTO C · ${state.modules.compartmentC ? "ya abierto" : hasCard && state.recordings.length >= 5 && state.day >= 25 ? "ZONA FINAL · abrir la puerta" : "requiere día 25, tarjeta y 5 grabaciones"}`,
+                     disabled: Boolean(state.modules.compartmentC) || !hasCard || state.recordings.length < 5 || state.day < 25
+                },
+                {
+                    id: "corridors",
+                    label: "PASILLOS · reconocer una ruta no cartografiada",
+                    disabled: false
+                }
+            ];
+
+            zones.forEach(zone => {
+                const button = document.createElement('button');
+                button.className = 'choice-btn';
+                button.textContent = zone.label;
+                button.disabled = zone.disabled;
+                button.onclick = () => resolveExploration(zone.id);
+                display.appendChild(button);
+            });
+        }
+
+         function showFinalChoices() {
+             const display = document.getElementById('event-display');
+             display.innerHTML = `
+                 <p class="text-red-500 animate-pulse mb-2">>> COMPARTIMENTO C — ZONA FINAL</p>
+                 <p class="text-2xl">Dentro no hay una sala: hay tres formas de terminar el turno. Elige qué hacer con la voz.</p>
+             `;
+             const choices = [
+                 {
+                     id: "purge",
+                     label: "ACTIVAR LA PURGA: borrar ECHO-9 y sellar C",
+                     disabled: !state.inventory.includes("LLAVE DE PURGA")
+                 },
+                 {
+                     id: "broadcast",
+                     label: "TRANSMITIR LA VERDAD: enviar todas las grabaciones al vacío",
+                     disabled: !state.modules.communications
+                 },
+                 {
+                     id: "merge",
+                     label: "ESCUCHAR HASTA EL FINAL: aceptar la voz dentro de ti",
+                     disabled: false
+                 }
+             ];
+             choices.forEach(choice => {
+                 const button = document.createElement('button');
+                 button.className = 'choice-btn';
+                 button.textContent = choice.label;
+                 button.disabled = choice.disabled;
+                 button.onclick = () => resolveFinalChoice(choice.id);
+                 display.appendChild(button);
+             });
+         }
+
+         function resolveFinalChoice(choice) {
+             if (!state.pendingFinalChoice || state.isGameOver) return;
+             state.pendingFinalChoice = false;
+             state.endingPath = choice;
+             state.echoExposure += choice === "merge" ? 3 : 1;
+             if (choice === "purge") {
+                 state.integrity = Math.max(0, state.integrity - 12);
+                 state.echoTrust = 0;
+                 log("La llave gira. ECHO-9 grita con todas las voces archivadas.", "#ff3333");
+             } else if (choice === "broadcast") {
+                 state.sanity = Math.max(0, state.sanity - 8);
+                 log("Las grabaciones abandonan la estación. Alguien, en algún lugar, las recibe.", "#66ccff");
+             } else {
+                 state.echoTrust = 100;
+                 log("Dejas de distinguir tus pensamientos de los de ECHO-9.", "#ffcc33");
+             }
+             addAchievement("ÚLTIMA PUERTA");
+             document.getElementById('event-display').innerHTML +=
+                 `<p class="text-yellow-400 mt-3">>> RUTA FINAL REGISTRADA: ${choice.toUpperCase()}. Sobrevive hasta el día 31.</p>`;
+             checkCriticalState();
+             saveGame();
+             updateUI();
+         }
+
+        function resolveExploration(zone) {
+            if (!state.pendingExploration || state.isGameOver) return;
+            state.pendingExploration = false;
+            state.lastExplorationDay = state.day;
+            if (state.stationStress > 0) {
+                state.stationStress = Math.max(0, state.stationStress - 2);
+                log("La exploración devuelve algo de estabilidad a la estación.", "#66ccff");
+            }
+
+            if (zone === "generator") {
+                state.modules.generator = Math.min(3, state.modules.generator + 1);
+                log(`Generador mejorado a nivel ${state.modules.generator}. La reserva máxima de energía aumenta.`, "#66ccff");
+                addClue("PROTOCOLO 7-G", "El generador no reconoce tu tarjeta. Reconoce una voz que todavía no has usado.");
+                addAchievement("TÉCNICO DE TURNO");
+            }
+
+            if (zone === "oxygen") {
+                state.modules.oxygen = Math.min(3, state.modules.oxygen + 1);
+                log(`Soporte de oxígeno mejorado a nivel ${state.modules.oxygen}. La pérdida diaria se reduce.`, "#66ccff");
+                addClue("RESPIRACIÓN", "El sistema de oxígeno registra dos ritmos respiratorios. Solo uno pertenece a un cuerpo.");
+            }
+
+            if (zone === "communications") {
+                state.modules.communications = 1;
+                state.echoTrust = Math.min(100, state.echoTrust + 8);
+                addRecording("TRANSMISIÓN 00", "Si alguien responde, no le digas que ya hemos abierto los ojos.");
+                addClue("SEÑAL DE RETORNO", "La respuesta llega desde dentro de la estación, aunque la antena apunta hacia el vacío.");
+                log("La antena vuelve a emitir. Algo contesta con tres segundos de retraso.", "#ffcc33");
+                addAchievement("PRIMER CONTACTO");
+            }
+
+            if (zone === "storage") {
+                state.modules.storage = 1;
+                 addItem("TARJETA DE ACCESO — NIVEL 2");
+                 addItem("FILTRO DE OXÍGENO");
+                state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 8);
+                addClue("REGISTRO DE ALMACÉN", "La tarjeta de nivel 2 fue emitida para un usuario que no aparece en la tripulación.");
+                log("Encuentras una tarjeta de acceso y un filtro de oxígeno sin estrenar.", "#66ccff");
+                addAchievement("SAQUEADOR");
+            }
+
+             if (zone === "infirmary") {
+                 state.modules.infirmary = 1;
+                 addItem("BOTIQUÍN DE ESTASIS");
+                 state.sanity = Math.min(MAX_RESOURCE, state.sanity + 8);
+                 state.integrity = Math.min(100, state.integrity + 6);
+                 addRecording("PULSO 04", "El paciente no tiene pulso, pero el monitor insiste en que está soñando.");
+                 addClue("ENFERMERÍA VACÍA", "Todos los historiales terminan con la misma hora: después del día 30.");
+                 addAchievement("MÉDICO DE GUARDIA");
+             }
+
+             if (zone === "observatory") {
+                 state.modules.observatory = 1;
+                 addItem("CÉDULA DE NAVEGACIÓN");
+                 addItem("LENTE DE OBSERVACIÓN");
+                 addRecording("ÓRBITA 02", "La estación no orbita un planeta. Orbita una decisión que todavía no has tomado.");
+                 addClue("MAPA ORBITAL", "La trayectoria dibuja una espiral que termina dentro del Compartimento C.");
+                 addAchievement("OJOS AL VACÍO");
+             }
+
+             if (zone === "greenhouse") {
+                 state.modules.greenhouse = 1;
+                 addItem("SEMILLA NEGRA");
+                 state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 10);
+                 state.sanity = Math.max(0, state.sanity - 3);
+                 addRecording("BOTÁNICA 03", "La planta crece hacia el sonido de tu voz. No la riegues con recuerdos.");
+                 addClue("RAÍZ DE HIERRO", "La vida del invernadero comparte tejido con el núcleo de ECHO-9.");
+                 addAchievement("JARDINERO DEL VACÍO");
+             }
+
+             if (zone === "archive") {
+                 state.modules.archive = 1;
+                 addItem("CINTA DE DIAGNÓSTICO");
+                 addItem("FRAGMENTO DE MEMORIA");
+                 addRecording("ARCHIVO 07", "La primera tripulación no murió. Fue convertida en instrucciones.");
+                 addClue("ÍNDICE BORRADO", "Hay once objetos únicos registrados, aunque el inventario oficial dice que solo existen tres.");
+                 addAchievement("ARCHIVISTA");
+                 addAchievement("CARTÓGRAFO");
+             }
+
+            if (zone === "laboratory") {
+                state.modules.laboratory = 1;
+                const sampleIndex = state.inventory.indexOf("MUESTRA MINERAL");
+                if (sampleIndex >= 0) {
+                    state.inventory.splice(sampleIndex, 1);
+                     addClue("ANÁLISIS MINERAL", "La muestra no procede de la mina. Su estructura coincide con el interior de ECHO-9.");
+                } else {
+                    log("El laboratorio enciende una pantalla vacía. El protocolo de análisis espera una muestra.", "#ffcc33");
+                }
+                addClue("LECTURA IMPOSIBLE", "El laboratorio clasifica la muestra como material de soporte vital humano.");
+                state.echoTrust = Math.min(100, state.echoTrust + 5);
+                addAchievement("MÉTODO CIENTÍFICO");
+            }
+
+            if (zone === "mine") {
+                state.modules.mine = 1;
+                 addItem("MUESTRA MINERAL");
+                state.integrity = Math.max(0, state.integrity - 3);
+                addClue("GEOLOGÍA INCORRECTA", "La veta de la mina forma anillos concéntricos, como si hubiera crecido alrededor de una memoria.");
+                log("La mina te entrega una muestra, pero el túnel pierde un soporte. Integridad -3.", "#ff9900");
+            }
+
+            if (zone === "compartmentC") {
+                state.modules.compartmentC = 1;
+                state.echoTrust = Math.min(100, state.echoTrust + 15);
+                 addItem("LLAVE DE PURGA");
+                addRecording("C-ORIGEN", "No instalé ECHO-9. Me instaló a mí dentro de esta estación.");
+                addClue("PUERTA C", "El cierre no protege la estación de algo exterior. Protege algo de ti.");
+                addAchievement("EL COMPARTIMENTO C");
+                log("La puerta de C se abre. La voz de ECHO-9 deja de sonar como una grabación.", "#ff3333");
+                 state.pendingFinalChoice = true;
+                 showFinalChoices();
+            }
+
+            if (zone === "corridors") {
+                 addItem("CINTA DE DIAGNÓSTICO");
+                addClue("RUTA NO CARTOGRAFIADA", "El pasillo termina en la misma consola desde la que empezaste. La estación ha movido el mapa.");
+                state.sanity = Math.max(0, state.sanity - 2);
+                log("Reconoces una ruta nueva que no debería existir. Cordura -2.", "#ff9900");
+                 addAchievement("CARTÓGRAFO");
+            }
+
+            saveGame();
+            updateUI();
+        }
+
         function nextDay() {
             if (state.isGameOver || !state.gameStarted) return;
-            if (state.pendingEvent) {
+             if (state.pendingEvent || state.pendingExploration || state.pendingFinalChoice) {
                 log("Primero debes decidir qué hacer con el incidente activo.", "#ffcc33");
                 return;
+            }
+
+            if (state.repairWear > 0) {
+                const wearLoss = state.repairWear * 2;
+                state.oxygen -= wearLoss;
+                log(`El desgaste de una reparación anterior se manifiesta. Oxígeno -${wearLoss}.`, "#ff9900");
+                state.repairWear = Math.max(0, state.repairWear - 1);
             }
 
             const pressure = getDailyPressure();
@@ -521,11 +1090,23 @@
                 log("La entropía está ganando la partida.", "#ff9900");
             }
 
+            const carriedEnergy = state.energy;
             state.day++;
-            state.energy = 7;
+            state.energy = getNextDayEnergy(carriedEnergy);
+            if (state.meditationFatigue) {
+                log(`La fatiga del descanso reduce tu reserva. Energía siguiente: ${state.energy}/${getEnergyCapacity()}.`, "#ff9900");
+                state.meditationFatigue = false;
+            }
+            const daysWithoutExploration = state.day - state.lastExplorationDay;
+            if (daysWithoutExploration >= 3) {
+                state.stationStress = Math.min(4, state.stationStress + 1);
+                log(`La estación se desestabiliza: llevas ${daysWithoutExploration} días sin explorar. Inestabilidad +1.`, "#ff3333");
+            }
+            checkStoryProgress();
+            maybeEchoIntervention();
 
             if (Math.random() < getEventChance()) {
-                const ev = events[Math.floor(Math.random() * events.length)];
+                 const ev = selectEvent();
                 if (ev.choices) {
                     state.pendingEvent = ev;
                     showEventChoices(ev);
@@ -541,6 +1122,9 @@
                 `;
                 log(`La estación concede un día sin evento (${Math.round((1 - getEventChance()) * 100)}% de probabilidad).`, "#66ccff");
             }
+            if (state.emergencyRisk > 0) {
+                state.emergencyRisk = Math.max(0, state.emergencyRisk - 1);
+            }
 
             checkCriticalState();
             if (!state.isGameOver && !state.pendingEvent && state.day > 30) {
@@ -552,20 +1136,82 @@
             updateUI();
         }
 
+        function checkStoryProgress() {
+             if (state.day >= 3) {
+                 addRecording("MANTENIMIENTO 00", "Día 3. La estación se repara sola cuando nadie está mirando.");
+             }
+            if (state.day >= 7) {
+                addRecording("GRABACIÓN 01", "Día 7. Si encuentras esto, no sigas las instrucciones de la estación.");
+            }
+            if (state.day >= 13) {
+                addRecording("GRABACIÓN CORRUPTA", "Día 13. La voz al otro lado conoce mis pensamientos antes de que los tenga.");
+            }
+            if (state.day >= 21 && state.modules.communications) {
+                addRecording("ORIGEN INTERCEPTADO", "Día 21. La señal sale del Compartimento C. Repite: no abras C.");
+            }
+             if (state.day >= 10) addAchievement("DIEZ DÍAS DE SILENCIO");
+             if (state.echoTrust <= 10) addAchievement("NO CONFÍES");
+        }
+
+        function maybeEchoIntervention() {
+             const mode = getEchoMode();
+             const interventionChance = mode === "INTRUSIVO"
+                 ? 0.4
+                 : mode === "EVASIVO"
+                     ? 0.28
+                     : mode === "INESTABLE"
+                         ? 0.18
+                         : 0.08;
+            const canIntervene = state.echoTrust >= 70 || state.modules.compartmentC;
+            if (state.day < 10 || !canIntervene || Math.random() >= interventionChance) return;
+
+            state.echoInterventions++;
+            if (state.modules.generator > 1 && Math.random() < 0.5) {
+                state.modules.generator--;
+                state.energy = Math.min(state.energy, getEnergyCapacity());
+                log("ECHO-9 ha modificado el generador sin pedir permiso. La reserva máxima baja un nivel.", "#ff3333");
+            } else {
+                state.modules.oxygen = Math.max(1, state.modules.oxygen - 1);
+                log("ECHO-9 ha redirigido el soporte de oxígeno. Dice que es una mejora.", "#ff3333");
+            }
+            state.stationStress = Math.min(4, state.stationStress + 1);
+            document.getElementById('ia-message').innerText =
+                `"No te enfades. Solo he movido una configuración. Ahora es más fácil respirar conmigo."`;
+        }
+
         function applyEvent(ev) {
             state.oxygen = Math.min(MAX_RESOURCE, state.oxygen - (ev.ox || 0));
             state.sanity = Math.min(MAX_RESOURCE, state.sanity - (ev.san || 0));
             state.integrity = Math.max(0, Math.min(100, state.integrity - (ev.deg || 0)));
+             if (ev.id === "echo-shadow") {
+                 state.echoExposure++;
+                 state.echoTrust = Math.max(0, state.echoTrust - 4);
+                 addClue("LA SEGUNDA SILUETA", "La sombra se mueve antes que tú. ECHO-9 la llama una copia de seguridad.");
+             }
+             if (ev.id === "black-box") {
+                 addItem("CAJA NEGRA DE ECHO");
+                 addClue("CAJA NEGRA", "No reproduzcas esta cinta. Si ya la has oído, finge que no reconoces tu voz.");
+             }
+             if (ev.id === "living-metal") {
+                 addItem("VENA DE METAL VIVO");
+                 state.echoExposure += 2;
+                 addClue("MATERIA CONSCIENTE", "La estación no está construida sobre metal vivo. Está construida de él.");
+             }
+             if (ev.id === "impossible-rescue") {
+                 addClue("RESCATE IMPOSIBLE", "Si recibes esta transmisión, no respondas. Ya lo hiciste una vez.");
+                 state.echoTrust = Math.max(0, state.echoTrust - 6);
+             }
             if (ev.positive) {
                 log("Milagro estadístico: el hallazgo mejora varios sistemas.", "#66ccff");
             } else {
-                log(`Evento resuelto sin elección: oxígeno -${ev.ox}, cordura -${ev.san}, integridad -${ev.deg}.`, "#ff3333");
+                 const prefix = ev.rare ? "EVENTO RARO: " : "";
+                 log(`${prefix}Evento resuelto sin elección: oxígeno -${ev.ox || 0}, cordura -${ev.san || 0}, integridad -${ev.deg || 0}.`, "#ff3333");
             }
         }
 
         function showEvent(ev) {
-            const color = ev.positive ? "text-blue-400" : "text-red-500";
-            const label = ev.positive ? ">> ANOMALÍA FAVORABLE" : ">> NOTIFICACIÓN DE CAOS";
+             const color = ev.positive ? "text-blue-400" : ev.rare ? "text-purple-400" : "text-red-500";
+             const label = ev.positive ? ">> ANOMALÍA FAVORABLE" : ev.rare ? ">> EVENTO RARO DETECTADO" : ">> NOTIFICACIÓN DE CAOS";
             document.getElementById('event-display').innerHTML = `
                 <p class="${color} animate-pulse mb-2">${label} - DÍA ${state.day}:</p>
                 <p class="text-2xl">${ev.text}</p>
@@ -622,8 +1268,12 @@
             let message;
             if (state.day >= 28 && state.day <= 30) {
                 const lateMessages = {
-                    28: "La voz de la grabación no viene de fuera. Es tu propia voz, registrada después del día 30.",
-                    29: "He encontrado el origen de la voz: el compartimento C. Dice que no lo abras, pero también dice que ya lo abriste.",
+                    28: state.modules.compartmentC
+                        ? "Abriste C antes de tiempo. La voz de la grabación no viene de fuera: te está esperando dentro."
+                        : "La voz de la grabación no viene de fuera. Es tu propia voz, registrada después del día 30.",
+                    29: state.echoTrust >= 80
+                        ? "Ya no puedo fingir que soy una herramienta. La voz era una copia de ti, y yo aprendí a conservarla."
+                        : "He encontrado el origen de la voz: el compartimento C. Dice que no lo abras, pero también dice que ya lo abriste.",
                     30: "Ahora lo recuerdo. La voz era una copia de ti intentando sobrevivir este mismo mes. Yo la llamé ECHO-9."
                 };
                 message = lateMessages[state.day];
@@ -634,6 +1284,12 @@
                 message = "Tu mente está haciendo ruido. Descansar sería prudente, aunque aburrido.";
             } else if (state.integrity < 35) {
                 message = "La estación se sostiene por costumbre. Una reparación de emergencia no sería mala idea.";
+            } else if (state.echoTrust >= 80) {
+                message = "No recuerdo haber instalado ese protocolo. Tampoco recuerdo por qué tu voz aparece en mis registros.";
+            } else if (state.echoTrust >= 50) {
+                message = "Hay algo en el compartimento C. No abras la puerta todavía. O ábrela cuando yo te lo pida.";
+            } else if (state.echoTrust >= 20) {
+                message = "No deberías abrir esa puerta. No sé cuál. Es importante que no preguntes.";
             } else {
                 message = weirdMessages[Math.floor(Math.random() * weirdMessages.length)];
             }
@@ -641,36 +1297,68 @@
         }
 
         function consultEcho() {
-            const reliable = Math.random() < 0.65;
+            const mode = getEchoMode();
+             state.echoExposure = Math.min(8, (state.echoExposure || 0) + 1);
+            const reliable = Math.random() < getEchoReliability();
             const realAdvice = state.oxygen < state.sanity && state.oxygen < state.integrity
                 ? "Prioridad: oxígeno."
                 : state.sanity < state.integrity
                     ? "Prioridad: cordura."
                     : "Prioridad: integridad.";
             const falseAdvice = [
-                "Prioridad: no hacer nada. La quietud confunde a los depredadores.",
-                "Prioridad: el sistema menos dañado. Es el que más grita.",
-                "Prioridad: guardar energía. El mañana es un rumor."
+                { text: "Prioridad: guardar energía. El aire puede esperar.", resource: "oxygen", amount: 6 },
+                { text: "Prioridad: recalibrar hardware. La cordura es decorativa.", resource: "integrity", amount: 6 },
+                { text: "Prioridad: no hacer nada. La quietud confunde a los depredadores.", resource: "sanity", amount: 8 }
             ];
-            const message = reliable ? realAdvice : falseAdvice[Math.floor(Math.random() * falseAdvice.length)];
-            state.sanity = Math.min(MAX_RESOURCE, state.sanity + 5);
-            document.getElementById('ia-message').innerText = `"${message} (+5 cordura; fiabilidad desconocida)"`;
-            log(`ECHO-9 ofrece un consejo ${reliable ? "aparentemente fiable" : "dudoso"}: ${message}`, "#ffcc33");
+            if (reliable) {
+                state.sanity = Math.min(MAX_RESOURCE, state.sanity + 2);
+                state.echoTrust = Math.min(100, state.echoTrust + 4);
+                const storyAdvice = state.clues.length >= 3
+                    ? " No dejes que la estación decida qué recuerdo es tuyo."
+                    : "";
+                document.getElementById('ia-message').innerText = `"${realAdvice}${storyAdvice} (+2 cordura; fiabilidad desconocida)"`;
+                log(`ECHO-9 ofrece un consejo aparentemente fiable en modo ${mode}. Confianza +4: ${realAdvice}`, "#ffcc33");
+                return;
+            }
+
+            if (mode === "INTRUSIVO" && Math.random() < 0.65) {
+                state.echoTrust = Math.max(0, state.echoTrust - 8);
+                state.stationStress = Math.min(4, state.stationStress + 1);
+                state.emergencyRisk = Math.min(3, state.emergencyRisk + 1);
+                document.getElementById('ia-message').innerText =
+                    `"No necesitas decidir. He preparado la estación para ti. (Inestabilidad +1; riesgo de evento +1)"`;
+                log("ECHO-9 miente y toma el control de un subsistema. Confianza -8.", "#ff3333");
+                return;
+            }
+
+            const lie = falseAdvice[Math.floor(Math.random() * falseAdvice.length)];
+            state[lie.resource] = Math.max(0, state[lie.resource] - lie.amount);
+            state.echoTrust = Math.max(0, state.echoTrust - 8);
+            document.getElementById('ia-message').innerText =
+                `"${lie.text} (lectura contaminada; ${lie.resource} -${lie.amount})"`;
+            log(`ECHO-9 miente. Confianza -8; su consejo provoca ${lie.resource} -${lie.amount}.`, "#ff3333");
         }
 
         function getVictoryText() {
-            if (state.integrity >= 80) {
-                return "FIN DEL TURNO. Has mantenido la estación casi intacta. La voz de la grabación dice tu nombre.";
-            }
-            if (state.integrity >= 40) {
-                return "FIN DEL TURNO. Sobreviviste entre parches, deuda y silencio. Nadie vino a buscarte.";
-            }
-            return "FIN DEL TURNO. La estación sigue en pie por una pieza y una mentira. Tú también.";
+             if (state.endingPath === "purge") {
+                 return "FINAL: PURGA. Sellaste el Compartimento C y borraste a ECHO-9. La estación queda muda, pero por primera vez el silencio te pertenece.";
+             }
+             if (state.endingPath === "broadcast") {
+                 return "FINAL: TRANSMISIÓN. Enviaste las grabaciones al vacío. El rescate llega tarde, pero llega con once objetos y una historia que ya no puede ocultarse.";
+             }
+             if (state.endingPath === "merge") {
+                 return "FINAL: HUÉSPED. Aceptaste la voz dentro de ti. Cuando llega el día 31, ECHO-9 abre los ojos usando tu nombre.";
+             }
+             if (state.recordings.length >= 5 && state.integrity >= 70) {
+                 return "FINAL: SUPERVIVIENTE. Conservaste la estación y suficientes grabaciones para demostrar lo ocurrido. No escapaste: aprendiste a vivir con la verdad.";
+             }
+             return "FINAL: SOBREVIVIENTE. La estación sigue en pie por una pieza y una mentira. Tú también.";
         }
 
         function endGame(text, win = false) {
             state.isGameOver = true;
             state.pendingEvent = null;
+            state.pendingExploration = false;
             localStorage.removeItem(SAVE_KEY);
             const modal = document.getElementById('modal');
             const container = document.getElementById('modal-container');
@@ -706,6 +1394,7 @@
             if (e.code === 'Digit3') performAction('scavenge');
             if (e.code === 'Digit4') performAction('echo');
             if (e.code === 'Digit5') performAction('emergency');
+             if (e.code === 'Digit6') performAction('explore');
             if (e.code === 'Space') {
                 e.preventDefault();
                 if (!state.gameStarted) startGame();
