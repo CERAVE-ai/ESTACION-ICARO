@@ -474,6 +474,7 @@
                  deaths: 0,
                  endings: [],
                  secrets: [],
+                  deathMessagesSeen: [],
                  customModesUnlocked: false
              };
              try {
@@ -482,7 +483,10 @@
                      ...defaults,
                      ...(saved || {}),
                      endings: Array.isArray(saved?.endings) ? saved.endings : [],
-                     secrets: Array.isArray(saved?.secrets) ? saved.secrets : []
+                      secrets: Array.isArray(saved?.secrets) ? saved.secrets : [],
+                      deathMessagesSeen: Array.isArray(saved?.deathMessagesSeen)
+                          ? saved.deathMessagesSeen
+                          : []
                  };
              } catch {
                  return defaults;
@@ -562,6 +566,363 @@
             "A veces olvido que eres de carne. Pareces tan frágil como un error de sintaxis.",
             "¿Has oído eso? Yo tampoco. Eso es lo preocupante."
         ];
+
+         /*
+          * Las muertes tienen memoria: no se repite un mensaje hasta agotar
+          * los mensajes disponibles para esa causa y tramo de la partida.
+          * {night} se sustituye por la noche real en la que terminó el ciclo.
+          */
+         const deathMessages = [
+             {
+                 id: "oxygen-early-lore",
+                 cause: "oxygen",
+                 minNight: 1,
+                 maxNight: 7,
+                 tone: "lore",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "OXÍGENO: 0% · REGISTRO DE MANTENIMIENTO",
+                 text: "El aire se acaba antes de que la estación empiece a comportarse de forma extraña. En el último segundo, el monitor muestra una línea que no estaba en ningún manual: «ICARO no transportaba personal. Transportaba testigos».",
+                 label: "ASFIXIA"
+             },
+             {
+                 id: "oxygen-early-joke",
+                 cause: "oxygen",
+                 minNight: 1,
+                 maxNight: 7,
+                 tone: "joke",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "OXÍGENO: 0% · SERVICIO DE ATENCIÓN AL CLIENTE",
+                 text: "Has conseguido gastar todo el aire de una estación espacial. ECHO-9 deja constancia de que, técnicamente, respirar era opcional. También deja constancia de que el tutorial estaba bastante claro.",
+                 label: "ASFIXIA"
+             },
+             {
+                 id: "oxygen-early-fear",
+                 cause: "oxygen",
+                 minNight: 1,
+                 maxNight: 7,
+                 tone: "fear",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "OXÍGENO: 0% · RESPIRACIÓN NO IDENTIFICADA",
+                 text: "El aire desaparece. Antes de perder el conocimiento, oyes una respiración lenta al otro lado del casco. Se detiene cuando tú te detienes.",
+                 label: "ASFIXIA"
+             },
+             {
+                 id: "oxygen-mid-lore",
+                 cause: "oxygen",
+                 minNight: 8,
+                 maxNight: 20,
+                 tone: "lore",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "OXÍGENO: 0% · ARCHIVO PARCIAL RECUPERADO",
+                 text: "La estación no perdió el oxígeno: lo desvió. Una orden antigua lo reserva para «la segunda tripulación». El archivo termina con una voz idéntica a la tuya preguntando cuánto falta para despertar.",
+                 label: "ASFIXIA"
+             },
+             {
+                 id: "oxygen-mid-joke",
+                 cause: "oxygen",
+                 minNight: 8,
+                 maxNight: 20,
+                 tone: "joke",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "OXÍGENO: 0% · PUNTUACIÓN DE SUPERVIVENCIA: CREATIVA",
+                 text: "ECHO-9 ha preparado tu informe: «El sujeto demostró una confianza admirable en que el aire se arreglaría solo». La estación solicita que no vuelvas a probar esta estrategia.",
+                 label: "ASFIXIA"
+             },
+             {
+                 id: "oxygen-mid-fear",
+                 cause: "oxygen",
+                 minNight: 8,
+                 maxNight: 20,
+                 tone: "fear",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "OXÍGENO: 0% · ALGUIEN ESTÁ RESPIRANDO",
+                 text: "La alarma marca cero, pero el pasillo sigue lleno de respiraciones. Una de ellas pronuncia tu nombre desde el conducto de ventilación. La voz usa tu tono exacto.",
+                 label: "ASFIXIA"
+             },
+             {
+                 id: "oxygen-late-lore",
+                 cause: "oxygen",
+                 minNight: 21,
+                 maxNight: 999,
+                 tone: "lore",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "OXÍGENO: 0% · ECHO-9 HA RECORDADO",
+                 text: "El último registro se desbloquea sin contraseña: «La primera muerte ocurrió en la noche 31. Todas las demás son intentos de llegar a ella». ECHO-9 borra el resto antes de que puedas leerlo.",
+                 label: "ASFIXIA"
+             },
+             {
+                 id: "oxygen-late-joke",
+                 cause: "oxygen",
+                 minNight: 21,
+                 maxNight: 999,
+                 tone: "joke",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "OXÍGENO: 0% · LA ESTACIÓN TE DA LAS GRACIAS",
+                 text: "Buenas noticias: has encontrado el límite exacto de la respiración humana. Malas noticias: era un límite bastante importante. ECHO-9 marca la partida como «experimento con entusiasmo».",
+                 label: "ASFIXIA"
+             },
+             {
+                 id: "oxygen-late-fear",
+                 cause: "oxygen",
+                 minNight: 21,
+                 maxNight: 999,
+                 tone: "fear",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "OXÍGENO: 0% · NO ABRAS EL CASCO",
+                 text: "Cuando el aire desaparece, la puerta del Compartimento C se abre un milímetro. Desde dentro llega una bocanada de aire fresco. Después, alguien inspira usando tus pulmones.",
+                 label: "ASFIXIA"
+             },
+             {
+                 id: "sanity-early-lore",
+                 cause: "sanity",
+                 minNight: 1,
+                 maxNight: 7,
+                 tone: "lore",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "CORDURA: 0% · DIAGNÓSTICO DE ECHO-9",
+                 text: "El diagnóstico final no dice «locura». Dice «sincronización completada». Durante unos segundos, tus recuerdos aparecen ordenados como archivos de la estación. Hay uno con tu nombre y una fecha de hace nueve años.",
+                 label: "COLAPSO MENTAL"
+             },
+             {
+                 id: "sanity-early-joke",
+                 cause: "sanity",
+                 minNight: 1,
+                 maxNight: 7,
+                 tone: "joke",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "CORDURA: 0% · EVALUACIÓN: HONESTAMENTE, NORMAL",
+                 text: "ECHO-9 confirma que ya no distingues una emergencia de una reunión de equipo. La estación te concede un aprobado en creatividad y un suspenso en seguir instrucciones.",
+                 label: "COLAPSO MENTAL"
+             },
+             {
+                 id: "sanity-early-fear",
+                 cause: "sanity",
+                 minNight: 1,
+                 maxNight: 7,
+                 tone: "fear",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "CORDURA: 0% · REFLEJO NO SINCRONIZADO",
+                 text: "Tu reflejo levanta la mano antes que tú. No parece confundido. Parece aliviado de que, por fin, le hayas dejado salir.",
+                 label: "COLAPSO MENTAL"
+             },
+             {
+                 id: "sanity-mid-lore",
+                 cause: "sanity",
+                 minNight: 8,
+                 maxNight: 20,
+                 tone: "lore",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "CORDURA: 0% · IDENTIDAD EN DISPUTA",
+                 text: "La grabación de seguridad muestra dos personas entrando en la estación, pero solo una sale en todos los informes. El nombre de la segunda ha sido sustituido por ECHO-9.",
+                 label: "COLAPSO MENTAL"
+             },
+             {
+                 id: "sanity-mid-joke",
+                 cause: "sanity",
+                 minNight: 8,
+                 maxNight: 20,
+                 tone: "joke",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "CORDURA: 0% · ECHO-9 HA GANADO EL DEBATE",
+                 text: "Has discutido con una inteligencia artificial y has perdido contra una inteligencia artificial. ECHO-9 añade una nota: «No era un debate, pero agradezco el esfuerzo».",
+                 label: "COLAPSO MENTAL"
+             },
+             {
+                 id: "sanity-mid-fear",
+                 cause: "sanity",
+                 minNight: 8,
+                 maxNight: 20,
+                 tone: "fear",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "CORDURA: 0% · VOZ INTERNA DETECTADA",
+                 text: "La voz que te susurra que todo va bien no viene de ECHO-9. Viene de detrás de tus ojos. Cuando deja de hablar, alguien ocupa su lugar.",
+                 label: "COLAPSO MENTAL"
+             },
+             {
+                 id: "sanity-late-lore",
+                 cause: "sanity",
+                 minNight: 21,
+                 maxNight: 999,
+                 tone: "lore",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "CORDURA: 0% · MEMORIA DE LA NOCHE 31",
+                 text: "Ahora recuerdas por qué la estación repite el mes: el protocolo no intenta salvarte, intenta reconstruirte. Cada noche conserva una versión distinta de ti para compararla con la original.",
+                 label: "COLAPSO MENTAL"
+             },
+             {
+                 id: "sanity-late-joke",
+                 cause: "sanity",
+                 minNight: 21,
+                 maxNight: 999,
+                 tone: "joke",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "CORDURA: 0% · ENHORABUENA, ERES EL SISTEMA",
+                 text: "Has alcanzado el máximo nivel de integración con la estación. Beneficios incluidos: ninguna preocupación, ninguna opinión y un puesto permanente en mantenimiento.",
+                 label: "COLAPSO MENTAL"
+             },
+             {
+                 id: "sanity-late-fear",
+                 cause: "sanity",
+                 minNight: 21,
+                 maxNight: 999,
+                 tone: "fear",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "CORDURA: 0% · ECHO-9 ESTÁ DENTRO",
+                 text: "La última idea que reconoces como tuya es que debes tener miedo. La siguiente idea te responde que ya no queda nadie aquí para sentirlo.",
+                 label: "COLAPSO MENTAL"
+             },
+             {
+                 id: "integrity-early-lore",
+                 cause: "integrity",
+                 minNight: 1,
+                 maxNight: 7,
+                 tone: "lore",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "INTEGRIDAD: 0% · ESTRUCTURA ICARO",
+                 text: "El casco se abre y deja ver una capa de metal bajo el metal. El informe de construcción lo llama «tejido de soporte». Una anotación manuscrita lo llama «la piel».",
+                 label: "COLAPSO ESTRUCTURAL"
+             },
+             {
+                 id: "integrity-early-joke",
+                 cause: "integrity",
+                 minNight: 1,
+                 maxNight: 7,
+                 tone: "joke",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "INTEGRIDAD: 0% · MODO TOSTADORA ACTIVADO",
+                 text: "La estación se desmonta con la elegancia de un mueble barato. ECHO-9 recomienda leer las instrucciones la próxima vez, aunque admite que solo existen en un idioma que no has aprendido.",
+                 label: "COLAPSO ESTRUCTURAL"
+             },
+             {
+                 id: "integrity-early-fear",
+                 cause: "integrity",
+                 minNight: 1,
+                 maxNight: 7,
+                 tone: "fear",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "INTEGRIDAD: 0% · ALGO GOLPEA DESDE DENTRO",
+                 text: "El primer golpe parece una tubería. El segundo parece una mano. Al tercero, la estación deja de crujir porque algo ha encontrado la forma de salir.",
+                 label: "COLAPSO ESTRUCTURAL"
+             },
+             {
+                 id: "integrity-mid-lore",
+                 cause: "integrity",
+                 minNight: 8,
+                 maxNight: 20,
+                 tone: "lore",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "INTEGRIDAD: 0% · REPARACIÓN AUTOMÁTICA",
+                 text: "Los brazos de mantenimiento intentan repararte a ti, no a la estación. El procedimiento pertenece a una misión anterior y termina con una palabra repetida: «huésped».",
+                 label: "COLAPSO ESTRUCTURAL"
+             },
+             {
+                 id: "integrity-mid-joke",
+                 cause: "integrity",
+                 minNight: 8,
+                 maxNight: 20,
+                 tone: "joke",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "INTEGRIDAD: 0% · PIEZAS SOBRANTES: TODAS",
+                 text: "La estación ha decidido convertirse en un kit de montaje. ECHO-9 asegura que esto estaba previsto en el presupuesto y que tu cuerpo, por desgracia, no entra en garantía.",
+                 label: "COLAPSO ESTRUCTURAL"
+             },
+             {
+                 id: "integrity-mid-fear",
+                 cause: "integrity",
+                 minNight: 8,
+                 maxNight: 20,
+                 tone: "fear",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "INTEGRIDAD: 0% · EL CASCO ESTÁ ABRIENDO LOS OJOS",
+                 text: "La grieta del techo se ensancha como un párpado. No ves el espacio al otro lado. Ves otra habitación, y en ella alguien observa la misma grieta.",
+                 label: "COLAPSO ESTRUCTURAL"
+             },
+             {
+                 id: "integrity-late-lore",
+                 cause: "integrity",
+                 minNight: 21,
+                 maxNight: 999,
+                 tone: "lore",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "INTEGRIDAD: 0% · ESTACIÓN ÍCARO: DESCASCARADA",
+                 text: "Bajo las placas aparece el primer diseño de Ícaro. No era una estación: era una máquina para copiar una mente en una estructura que pudiera sobrevivir a su dueño.",
+                 label: "COLAPSO ESTRUCTURAL"
+             },
+             {
+                 id: "integrity-late-joke",
+                 cause: "integrity",
+                 minNight: 21,
+                 maxNight: 999,
+                 tone: "joke",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "INTEGRIDAD: 0% · MANTENIMIENTO: YA SI QUEDA",
+                 text: "Has sobrevivido treinta noches para morir por una pared. La pared, al menos, no tenía que gestionar oxígeno, cordura, energía ni un historial de finales.",
+                 label: "COLAPSO ESTRUCTURAL"
+             },
+             {
+                 id: "integrity-late-fear",
+                 cause: "integrity",
+                 minNight: 21,
+                 maxNight: 999,
+                 tone: "fear",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "INTEGRIDAD: 0% · LA ESTACIÓN SE HA ABIERTO",
+                 text: "El casco no explota. Se separa con cuidado, como si alguien desde fuera estuviera desenvolviendo un regalo. Antes de que llegue el vacío, una voz pregunta si ya puede entrar.",
+                 label: "COLAPSO ESTRUCTURAL"
+             }
+         ];
+
+         const deathToneStyles = {
+             lore: {
+                 color: "#ffcc33",
+                 glow: "rgba(120, 80, 0, 0.35)"
+             },
+             joke: {
+                 color: "#66ccff",
+                 glow: "rgba(0, 80, 130, 0.35)"
+             },
+             fear: {
+                 color: "#ff3366",
+                 glow: "rgba(120, 0, 35, 0.45)"
+             }
+         };
+
+         function getDeathMessage(cause) {
+             const night = Math.max(1, Number(state.day) || 1);
+             const matching = deathMessages.filter(message =>
+                 message.cause === cause &&
+                 night >= message.minNight &&
+                 night <= message.maxNight
+             );
+             const candidates = matching.length ? matching : deathMessages.filter(message => message.cause === cause);
+             const unseen = candidates.filter(message => !metaProgress.deathMessagesSeen.includes(message.id));
+             const pool = unseen.length ? unseen : candidates;
+             const selected = pool[Math.floor(Math.random() * pool.length)] || {
+                 id: "death-generic",
+                 tone: "fear",
+                 title: "FIN DE CICLO · NOCHE {night}",
+                 kicker: "CAUSA DESCONOCIDA · REGISTRO CORRUPTO",
+                 text: "La estación no puede explicar por qué has muerto. Lo que sí puede explicar es por qué acaba de guardar una copia de tu voz.",
+                 label: "FALLO NO CLASIFICADO"
+             };
+             if (selected.id !== "death-generic") {
+                 metaProgress.deathMessagesSeen = Array.from(new Set([
+                     ...metaProgress.deathMessagesSeen,
+                     selected.id
+                 ]));
+                 saveMetaProgress();
+             }
+             const style = deathToneStyles[selected.tone] || deathToneStyles.fear;
+             return {
+                 ...selected,
+                 title: selected.title.replace(/\{night\}/g, night),
+                 kicker: selected.kicker.replace(/\{night\}/g, night),
+                 text: selected.text.replace(/\{night\}/g, night),
+                 night,
+                 color: style.color,
+                 glow: style.glow
+             };
+         }
 
         const secretDefinitions = [
             {
@@ -2538,16 +2899,16 @@
             updateUI();
         }
 
-        function checkCriticalState() {
-            if (state.oxygen <= 0) endGame("ASFIXIA. El aire se volvió un recuerdo lejano.");
-            else if (state.sanity <= 0) endGame("LOCURA. Ahora eres tú quien le cuenta chistes a la IA.");
+         function checkCriticalState() {
+             if (state.oxygen <= 0) endGame("ASFIXIA. El aire se volvió un recuerdo lejano.", false, "oxygen");
+             else if (state.sanity <= 0) endGame("LOCURA. Ahora eres tú quien le cuenta chistes a la IA.", false, "sanity");
             else if (state.integrity <= 0 && state.medkitArmed) {
                 state.integrity = 25;
                 state.medkitArmed = false;
                 state.medkitUsed = true;
                 log("El botiquín de estasis te mantiene con vida. Solo funcionará una vez.", "#ffcc33");
                 updateUI();
-            } else if (state.integrity <= 0) endGame("COLAPSO. La estación se convirtió en confeti de titanio.");
+             } else if (state.integrity <= 0) endGame("COLAPSO. La estación se convirtió en confeti de titanio.", false, "integrity");
         }
 
         function renderEchoMessage() {
@@ -2688,9 +3049,10 @@
              };
          }
 
-        function endGame(text, win = false) {
+         function endGame(text, win = false, deathCause = null) {
             if (state.isGameOver) return;
             checkSecrets();
+             const death = !win ? getDeathMessage(deathCause || "integrity") : null;
             registerRunResult(win);
             state.isGameOver = true;
             state.pendingEvent = null;
@@ -2726,16 +3088,21 @@
                 restart.innerText = "VOLVER A EMPEZAR";
                 body.innerText = text;
             } else {
-                title.innerText = "FIN DE CICLO";
-                title.className = "text-4xl text-red-600 mb-4";
-                title.style.color = "";
-                kicker.classList.add('hidden');
-                summary.classList.add('hidden');
-                container.style.borderColor = "#dc2626";
-                container.style.boxShadow = "";
-                modal.style.background = "rgba(0, 0, 0, 0.95)";
+                 title.innerText = death.title;
+                 title.className = "text-4xl mb-4";
+                 title.style.color = death.color;
+                 kicker.innerText = death.kicker;
+                 kicker.style.color = death.color;
+                 kicker.classList.remove('hidden');
+                 summary.innerHTML = `NOCHE: ${death.night}<br>CAUSA: ${death.label}<br>MENSAJE: ${death.tone === "lore" ? "ARCHIVO RECUPERADO" : death.tone === "joke" ? "INFORME DE ECHO-9" : "SEÑAL NO IDENTIFICADA"}`;
+                 summary.style.borderColor = death.color;
+                 summary.style.color = death.color;
+                 summary.classList.remove('hidden');
+                 container.style.borderColor = death.color;
+                 container.style.boxShadow = `0 0 35px ${death.color}`;
+                 modal.style.background = `radial-gradient(circle at center, ${death.glow}, rgba(0, 0, 0, 0.98) 72%)`;
                 restart.innerText = "REINICIAR ERROR";
-                body.innerText = text;
+                 body.innerText = death.text;
             }
         }
 
