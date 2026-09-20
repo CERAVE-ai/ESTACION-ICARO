@@ -445,6 +445,7 @@
         <!-- Footer -->
         <div class="flex justify-between text-[10px] opacity-50 z-20">
              <span id="logic-status">LOGIC_STATUS: UNSTABLE</span>
+             <button id="sound-toggle" onclick="toggleAudio()" class="terminal-btn px-2 py-1 text-[10px]" aria-pressed="true">🔊 SONIDO: ACTIVADO</button>
              <span id="ai-mood">AI_MOOD: NIHILISTIC</span>
         </div>
     </div>
@@ -544,6 +545,8 @@
                  "decisions-label": "DECISIONES OBSERVADAS",
                  "logic-status": "LOGIC_STATUS: INESTABLE",
                  "ai-mood": "AI_MOOD: NIHILISTA",
+                 "sound-on": "🔊 SONIDO: ACTIVADO",
+                 "sound-off": "🔇 SONIDO: SILENCIADO",
                  "meta-title": "HISTORIAL DE SUPERVIVENCIA",
                  "meta-completed": "PARTIDAS COMPLETADAS",
                  "meta-deaths": "MUERTES",
@@ -626,6 +629,8 @@
                  "decisions-label": "OBSERVED DECISIONS",
                  "logic-status": "LOGIC_STATUS: UNSTABLE",
                  "ai-mood": "AI_MOOD: NIHILISTIC",
+                 "sound-on": "🔊 SOUND: ON",
+                 "sound-off": "🔇 SOUND: MUTED",
                  "meta-title": "SURVIVAL HISTORY",
                  "meta-completed": "GAMES COMPLETED",
                  "meta-deaths": "DEATHS",
@@ -708,6 +713,8 @@
                  "decisions-label": "DÉCISIONS OBSERVÉES",
                  "logic-status": "LOGIC_STATUS : INSTABLE",
                  "ai-mood": "AI_MOOD : NIHILISTE",
+                 "sound-on": "🔊 SON : ACTIVÉ",
+                 "sound-off": "🔇 SON : MUET",
                  "meta-title": "HISTORIQUE DE SURVIE",
                  "meta-completed": "PARTIES TERMINÉES",
                  "meta-deaths": "MORTS",
@@ -790,6 +797,8 @@
                  "decisions-label": "DECISIONI OSSERVATE",
                  "logic-status": "LOGIC_STATUS: INSTABILE",
                  "ai-mood": "AI_MOOD: NIHILISTA",
+                 "sound-on": "🔊 AUDIO: ATTIVO",
+                 "sound-off": "🔇 AUDIO: MUTO",
                  "meta-title": "STORICO SOPRAVVIVENZA",
                  "meta-completed": "PARTITE COMPLETATE",
                  "meta-deaths": "MORTI",
@@ -872,6 +881,8 @@
                  "decisions-label": "BEOBACHTETE ENTSCHEIDUNGEN",
                  "logic-status": "LOGIC_STATUS: INSTABIL",
                  "ai-mood": "AI_MOOD: NIHILISTISCH",
+                 "sound-on": "🔊 TON: AN",
+                 "sound-off": "🔇 TON: STUMM",
                  "meta-title": "ÜBERLEBENSHISTORIE",
                  "meta-completed": "ABGESCHLOSSENE SPIELE",
                  "meta-deaths": "TODE",
@@ -895,6 +906,13 @@
          let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || "es";
          if (!languageData[currentLanguage]) currentLanguage = "es";
 
+         const AUDIO_KEY = 'estacion-icaro-audio-v1';
+         let audioContext = null;
+         let audioMaster = null;
+         let ambientTimer = null;
+         let stationHum = [];
+         let audioEnabled = localStorage.getItem(AUDIO_KEY) !== "off";
+
          function tr(key) {
              return languageData[currentLanguage]?.[key] ??
                  languageData.es[key] ??
@@ -907,6 +925,7 @@
                  const element = document.getElementById(key);
                  if (element && key !== "lang") element.innerText = tr(key);
              });
+             updateSoundToggle();
              renderMetaProgress();
              if (state.gameStarted) updateUI();
          }
@@ -917,6 +936,180 @@
              localStorage.setItem(LANGUAGE_KEY, language);
              applyLanguage();
              document.getElementById('language-screen').classList.add('hidden');
+         }
+
+         function ensureAudio() {
+             if (!audioEnabled) return null;
+             if (!audioContext) {
+                 const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                 if (!AudioContextClass) return null;
+                 audioContext = new AudioContextClass();
+                 audioMaster = audioContext.createGain();
+                 audioMaster.gain.value = 0.12;
+                 audioMaster.connect(audioContext.destination);
+             }
+             if (audioContext.state === "suspended") audioContext.resume();
+             return audioContext;
+         }
+
+         function createNoiseBuffer(duration = 1) {
+             const ctx = ensureAudio();
+             if (!ctx) return null;
+             const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * duration), ctx.sampleRate);
+             const data = buffer.getChannelData(0);
+             for (let index = 0; index < data.length; index++) {
+                 data[index] = Math.random() * 2 - 1;
+             }
+             return buffer;
+         }
+
+         function playGasSound() {
+             const ctx = ensureAudio();
+             if (!ctx) return;
+             const now = ctx.currentTime;
+             const source = ctx.createBufferSource();
+             const filter = ctx.createBiquadFilter();
+             const gain = ctx.createGain();
+             source.buffer = createNoiseBuffer(2.4);
+             filter.type = "bandpass";
+             filter.frequency.setValueAtTime(1150 + Math.random() * 350, now);
+             filter.Q.setValueAtTime(0.7, now);
+             gain.gain.setValueAtTime(0.001, now);
+             gain.gain.linearRampToValueAtTime(0.34, now + 0.18);
+             gain.gain.linearRampToValueAtTime(0.16, now + 1.2);
+             gain.gain.exponentialRampToValueAtTime(0.001, now + 2.35);
+             source.connect(filter).connect(gain).connect(audioMaster);
+             source.start(now);
+             source.stop(now + 2.4);
+         }
+
+         function playMetalSound() {
+             const ctx = ensureAudio();
+             if (!ctx) return;
+             const now = ctx.currentTime;
+             const oscillator = ctx.createOscillator();
+             const gain = ctx.createGain();
+             const noise = ctx.createBufferSource();
+             const noiseFilter = ctx.createBiquadFilter();
+             const noiseGain = ctx.createGain();
+             oscillator.type = "triangle";
+             oscillator.frequency.setValueAtTime(285 + Math.random() * 100, now);
+             oscillator.frequency.exponentialRampToValueAtTime(58, now + 0.8);
+             gain.gain.setValueAtTime(0.001, now);
+             gain.gain.exponentialRampToValueAtTime(0.42, now + 0.008);
+             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+             noise.buffer = createNoiseBuffer(0.25);
+             noiseFilter.type = "highpass";
+             noiseFilter.frequency.setValueAtTime(1400, now);
+             noiseGain.gain.setValueAtTime(0.18, now);
+             noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+             oscillator.connect(gain).connect(audioMaster);
+             noise.connect(noiseFilter).connect(noiseGain).connect(audioMaster);
+             oscillator.start(now);
+             oscillator.stop(now + 0.95);
+             noise.start(now);
+             noise.stop(now + 0.25);
+         }
+
+         function playFootstep(time, volume = 0.22) {
+             const ctx = ensureAudio();
+             if (!ctx) return;
+             const oscillator = ctx.createOscillator();
+             const gain = ctx.createGain();
+             const noise = ctx.createBufferSource();
+             const noiseFilter = ctx.createBiquadFilter();
+             const noiseGain = ctx.createGain();
+             oscillator.type = "sine";
+             oscillator.frequency.setValueAtTime(82, time);
+             oscillator.frequency.exponentialRampToValueAtTime(42, time + 0.18);
+             gain.gain.setValueAtTime(0.001, time);
+             gain.gain.linearRampToValueAtTime(volume, time + 0.012);
+             gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
+             noise.buffer = createNoiseBuffer(0.18);
+             noiseFilter.type = "lowpass";
+             noiseFilter.frequency.setValueAtTime(520, time);
+             noiseGain.gain.setValueAtTime(volume * 0.7, time);
+             noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.16);
+             oscillator.connect(gain).connect(audioMaster);
+             noise.connect(noiseFilter).connect(noiseGain).connect(audioMaster);
+             oscillator.start(time);
+             oscillator.stop(time + 0.28);
+             noise.start(time);
+             noise.stop(time + 0.18);
+         }
+
+         function playFootstepsSound() {
+             const ctx = ensureAudio();
+             if (!ctx) return;
+             const firstStep = ctx.currentTime + 0.04;
+             const steps = 3 + Math.floor(Math.random() * 3);
+             for (let index = 0; index < steps; index++) {
+                 playFootstep(firstStep + index * (0.34 + Math.random() * 0.08), index % 2 ? 0.16 : 0.22);
+             }
+         }
+
+         function playAmbientSound() {
+             if (!audioEnabled || !state.gameStarted || state.isGameOver || document.hidden) return;
+             const roll = Math.random();
+             if (state.oxygen < 35 && roll < 0.45) playGasSound();
+             else if (state.integrity < 40 && roll < 0.75) playMetalSound();
+             else if (state.sanity < 35 && roll < 0.7) playFootstepsSound();
+             else if (roll < 0.38) playGasSound();
+             else if (roll < 0.7) playMetalSound();
+             else playFootstepsSound();
+         }
+
+         function scheduleAmbientSound() {
+             clearTimeout(ambientTimer);
+             if (!audioEnabled || !state.gameStarted || state.isGameOver) return;
+             const delay = 9000 + Math.random() * 21000;
+             ambientTimer = setTimeout(() => {
+                 playAmbientSound();
+                 scheduleAmbientSound();
+             }, delay);
+         }
+
+         function startAmbientAudio() {
+             const ctx = ensureAudio();
+             if (!ctx || !audioEnabled) return;
+             if (!stationHum.length) {
+                 const hum = ctx.createOscillator();
+                 const humGain = ctx.createGain();
+                 hum.type = "sine";
+                 hum.frequency.value = 49;
+                 humGain.gain.value = 0.035;
+                 hum.connect(humGain).connect(audioMaster);
+                 hum.start();
+                 stationHum.push(hum, humGain);
+             }
+             scheduleAmbientSound();
+         }
+
+         function stopAmbientAudio() {
+             clearTimeout(ambientTimer);
+             ambientTimer = null;
+             stationHum.forEach(node => {
+                 try {
+                     if (typeof node.stop === "function") node.stop();
+                     node.disconnect();
+                 } catch {}
+             });
+             stationHum = [];
+         }
+
+         function updateSoundToggle() {
+             const toggle = document.getElementById('sound-toggle');
+             if (!toggle) return;
+             toggle.innerText = audioEnabled ? tr("sound-on") : tr("sound-off");
+             toggle.setAttribute("aria-pressed", String(audioEnabled));
+         }
+
+         function toggleAudio() {
+             audioEnabled = !audioEnabled;
+             localStorage.setItem(AUDIO_KEY, audioEnabled ? "on" : "off");
+             if (audioEnabled && state.gameStarted) startAmbientAudio();
+             else if (!audioEnabled) stopAmbientAudio();
+             updateSoundToggle();
          }
 
         let state = {
@@ -2177,6 +2370,7 @@
             if (isModeActive("echo")) state.echoTrust = 70;
             state.gameStarted = true;
             state.isGameOver = false;
+             startAmbientAudio();
              normalizeState();
             saveGame();
             updateUI();
@@ -2189,6 +2383,7 @@
             try {
                 state = { ...state, ...JSON.parse(saved), gameStarted: true, isGameOver: false };
                  normalizeState();
+                 startAmbientAudio();
                 document.getElementById('start-screen').classList.add('hidden');
                 document.getElementById('game-ui').classList.remove('hidden');
                 log("Partida recuperada. La estación recuerda lo que tú querías olvidar.", "#ffcc33");
@@ -3566,6 +3761,7 @@
              const death = !win ? getDeathMessage(deathCause || "integrity") : null;
             registerRunResult(win);
             state.isGameOver = true;
+             stopAmbientAudio();
             state.pendingEvent = null;
             state.pendingExploration = false;
              state.pendingZoneEvent = null;
