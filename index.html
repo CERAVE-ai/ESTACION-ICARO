@@ -12,7 +12,10 @@
             background-color: #0a0a0c;
             color: #33ff33;
             font-family: 'VT323', monospace;
-            text-shadow: 0 0 5px rgba(51, 255, 51, 0.7);
+            font-size: 16px;
+            line-height: 1.35;
+            text-shadow: 0 0 3px rgba(51, 255, 51, 0.62);
+            text-rendering: optimizeLegibility;
             overflow: hidden;
         }
 
@@ -185,27 +188,93 @@
 
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #33ff33; }
+
+        /* Legibilidad: el CRT sigue presente, pero ningún dato importante queda
+           reducido a texto casi microscópico o demasiado transparente. */
+        body [class~="text-[10px]"] {
+            font-size: 0.82rem !important;
+            line-height: 1.35 !important;
+        }
+
+        body [class~="text-[11px]"] {
+            font-size: 0.9rem !important;
+            line-height: 1.4 !important;
+        }
+
+        body [class~="text-[12px]"] {
+            font-size: 0.96rem !important;
+            line-height: 1.4 !important;
+        }
+
+        body [class~="text-xs"] {
+            font-size: 0.9rem !important;
+            line-height: 1.4 !important;
+        }
+
+        body [class~="text-sm"] {
+            font-size: 1rem !important;
+            line-height: 1.45 !important;
+        }
+
+        body [class~="opacity-40"] { opacity: 0.68 !important; }
+        body [class~="opacity-50"] { opacity: 0.76 !important; }
+        body [class~="opacity-60"] { opacity: 0.84 !important; }
+        body [class~="opacity-70"] { opacity: 0.9 !important; }
+        body [class~="opacity-80"] { opacity: 0.94 !important; }
+
+        .status-readout {
+            font-size: 0.9rem;
+            opacity: 1;
+            color: #d8ffd8;
+        }
+
+        .module-panel {
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        #start-screen,
+        #modal-container {
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body class="flex flex-col h-screen p-4">
     <div class="crt-overlay"></div>
     <div class="scanline"></div>
 
+    <!-- SELECTOR DE IDIOMA -->
+    <div id="language-screen" class="fixed inset-0 z-[250] bg-[#0a0a0c] flex flex-col items-center justify-center p-6 text-center">
+        <div class="max-w-xl w-full border-4 border-[#33ff33] p-10 bg-[#0d0d0f]">
+            <p id="language-kicker" class="text-sm tracking-widest mb-3 text-yellow-400">SISTEMA DE ARRANQUE · SELECCIÓN DE IDIOMA</p>
+            <h1 class="text-5xl mb-5 glitch tracking-widest">ESTACIÓN ÍCARO</h1>
+            <p id="language-prompt" class="text-xl mb-7">Selecciona el idioma de la interfaz:</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+                <button onclick="selectLanguage('es')" class="terminal-btn p-3 text-lg">[1] ESPAÑOL</button>
+                <button onclick="selectLanguage('en')" class="terminal-btn p-3 text-lg">[2] ENGLISH</button>
+                <button onclick="selectLanguage('fr')" class="terminal-btn p-3 text-lg">[3] FRANÇAIS</button>
+                <button onclick="selectLanguage('it')" class="terminal-btn p-3 text-lg">[4] ITALIANO</button>
+                <button onclick="selectLanguage('de')" class="terminal-btn p-3 text-lg">[5] DEUTSCH</button>
+            </div>
+            <p id="language-note" class="text-sm mt-6 opacity-80">Podrás cambiarlo al volver a cargar el juego.</p>
+        </div>
+    </div>
+
     <!-- PANTALLA DE CARGA / INICIO -->
     <div id="start-screen" class="fixed inset-0 z-[200] bg-[#0a0a0c] flex flex-col items-center justify-center p-6 text-center">
         <div class="max-w-xl w-full border-4 border-[#33ff33] p-10 bg-[#0d0d0f] relative">
-            <h1 class="text-6xl mb-4 glitch tracking-widest">ESTACIÓN ÍCARO</h1>
-            <p class="text-xl mb-8 text-yellow-500 italic">Sector de Minería Profunda - El Mes de Hierro</p>
+            <h1 id="start-title" class="text-6xl mb-4 glitch tracking-widest">ESTACIÓN ÍCARO</h1>
+            <p id="start-subtitle" class="text-xl mb-8 text-yellow-500 italic">Sector de Minería Profunda - El Mes de Hierro</p>
             
             <div class="text-left text-sm mb-10 space-y-2 opacity-80 border-l-2 border-[#33ff33] pl-4">
-                <p>> Cargando protocolos de soporte vital (DEFECTUOSOS)...</p>
-                <p>> Sincronizando IA ECHO-9 (PERSONALIDAD: INESTABLE)...</p>
-                <p>> Verificando integridad del hardware (82% - ADVERTENCIA)...</p>
-                <p>> Objetivo: Sobrevivir 30 días. No esperes rescate.</p>
-                 <p class="text-yellow-500">> Nota de tripulación: alguien dejó una voz grabada dentro de ECHO-9.</p>
+                <p id="boot-1">> Cargando protocolos de soporte vital (DEFECTUOSOS)...</p>
+                <p id="boot-2">> Sincronizando IA ECHO-9 (PERSONALIDAD: INESTABLE)...</p>
+                <p id="boot-3">> Verificando integridad del hardware (82% - ADVERTENCIA)...</p>
+                <p id="boot-4">> Objetivo: Sobrevivir 30 días. No esperes rescate.</p>
+                 <p id="boot-5" class="text-yellow-500">> Nota de tripulación: alguien dejó una voz grabada dentro de ECHO-9.</p>
             </div>
 
-            <button onclick="startGame()" class="terminal-btn px-12 py-4 text-2xl font-bold animate-pulse">
+            <button id="start-button" onclick="startGame()" class="terminal-btn px-12 py-4 text-2xl font-bold animate-pulse">
                 INICIAR TURNO DE NOCHE
             </button>
              <button id="continue-btn" onclick="continueGame()" class="terminal-btn hidden px-8 py-2 text-lg mt-3">
@@ -213,27 +282,27 @@
              </button>
 
              <div id="custom-mode-panel" class="hidden mt-6 text-left border border-yellow-500 p-3">
-                 <p class="text-yellow-400 text-lg mb-2">NUEVO MODO DESBLOQUEADO</p>
-                 <p class="text-xs text-yellow-200/70 mb-3">PERSONALIZA LA SIGUIENTE PARTIDA. PUEDES COMBINAR MODOS.</p>
+                 <p id="custom-mode-title" class="text-yellow-400 text-lg mb-2">NUEVO MODO DESBLOQUEADO</p>
+                 <p id="custom-mode-help" class="text-xs text-yellow-200/70 mb-3">PERSONALIZA LA SIGUIENTE PARTIDA. PUEDES COMBINAR MODOS.</p>
                  <label class="flex items-start gap-2 text-sm mb-2">
                      <input type="checkbox" name="game-mode" value="iron-plus" class="mt-1 accent-yellow-400">
-                     <span><strong>MES DE HIERRO+</strong><br><span class="text-[10px] opacity-70">Presión diaria +20% · eventos +10%</span></span>
+                      <span><strong id="mode-iron-plus">MES DE HIERRO+</strong><br><span id="mode-iron-plus-help" class="text-[10px] opacity-70">Presión diaria +20% · eventos +10%</span></span>
                  </label>
                  <label class="flex items-start gap-2 text-sm mb-2">
                      <input type="checkbox" name="game-mode" value="echo" class="mt-1 accent-yellow-400">
-                     <span><strong>MODO ECHO</strong><br><span class="text-[10px] opacity-70">ECHO-9 comienza con confianza 70</span></span>
+                      <span><strong id="mode-echo">MODO ECHO</strong><br><span id="mode-echo-help" class="text-[10px] opacity-70">ECHO-9 comienza con confianza 70</span></span>
                  </label>
                  <label class="flex items-start gap-2 text-sm mb-2">
                      <input type="checkbox" name="game-mode" value="silence" class="mt-1 accent-yellow-400">
-                     <span><strong>MODO SILENCIO</strong><br><span class="text-[10px] opacity-70">No puedes consultar a ECHO-9</span></span>
+                      <span><strong id="mode-silence">MODO SILENCIO</strong><br><span id="mode-silence-help" class="text-[10px] opacity-70">No puedes consultar a ECHO-9</span></span>
                  </label>
                  <label class="flex items-start gap-2 text-sm mb-2">
                      <input type="checkbox" name="game-mode" value="iron-pure" class="mt-1 accent-yellow-400">
-                     <span><strong>MODO HIERRO PURO</strong><br><span class="text-[10px] opacity-70">Sin guardado automático ni continuación</span></span>
+                      <span><strong id="mode-iron-pure">MODO HIERRO PURO</strong><br><span id="mode-iron-pure-help" class="text-[10px] opacity-70">Sin guardado automático ni continuación</span></span>
                  </label>
                  <label class="flex items-start gap-2 text-sm">
                      <input type="checkbox" name="game-mode" value="anomaly" class="mt-1 accent-yellow-400">
-                     <span><strong>MODO ANOMALÍA</strong><br><span class="text-[10px] opacity-70">Eventos raros aparecen con frecuencia x3</span></span>
+                      <span><strong id="mode-anomaly">MODO ANOMALÍA</strong><br><span id="mode-anomaly-help" class="text-[10px] opacity-70">Eventos raros aparecen con frecuencia x3</span></span>
                  </label>
              </div>
 
@@ -242,8 +311,8 @@
              </div>
             
             <div class="mt-6 space-y-1">
-                <p class="text-[10px] opacity-40 uppercase tracking-widest">Propiedad de la corporación helion. no se admiten quejas post-mortem.</p>
-                <p class="text-[12px] text-yellow-600/60 font-bold">La IA te dará pistas, confía en ella.</p>
+                 <p id="corporation-note" class="text-[10px] opacity-40 uppercase tracking-widest">Propiedad de la corporación helion. no se admiten quejas post-mortem.</p>
+                 <p id="ai-hint" class="text-[12px] text-yellow-600/60 font-bold">La IA te dará pistas, confía en ella.</p>
             </div>
         </div>
     </div>
@@ -253,15 +322,15 @@
         <!-- Estadísticas principales -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4 z-20">
             <div class="border p-2 border-[#33ff33]">
-                <div class="text-[10px]">TURNO MENSUAL</div>
+                <div id="label-day" class="text-[10px]">TURNO MENSUAL</div>
                 <div id="stat-day" class="text-xl text-yellow-400">01 / 30</div>
             </div>
             <div class="border p-2 border-[#33ff33]">
-                <div class="text-[10px]">ENERGÍA</div>
-                 <div id="stat-energy" class="text-xl">7 / 7</div>
+                <div id="label-energy" class="text-[10px]">ENERGÍA</div>
+                 <div id="stat-energy" class="text-xl">9 / 9</div>
             </div>
             <div class="border p-2 border-[#33ff33]">
-                <div class="text-[10px]">OXÍGENO</div>
+                <div id="label-oxygen" class="text-[10px]">OXÍGENO</div>
                  <div class="status-bar mt-1">
                      <div id="bar-ox" class="status-fill"></div>
                      <div id="bar-ox-overflow" class="status-overflow"></div>
@@ -270,7 +339,7 @@
                  <div id="ox-readout" class="status-readout">90 / 110</div>
             </div>
             <div class="border p-2 border-[#33ff33]">
-                <div class="text-[10px]">CORDURA</div>
+                <div id="label-sanity" class="text-[10px]">CORDURA</div>
                  <div class="status-bar mt-1">
                      <div id="bar-sanity" class="status-fill"></div>
                      <div id="bar-sanity-overflow" class="status-overflow"></div>
@@ -279,7 +348,7 @@
                  <div id="sanity-readout" class="status-readout">90 / 110</div>
             </div>
             <div class="border p-2 border-[#33ff33]">
-                <div class="text-[10px]">INTEGRIDAD DE HARDWARE</div>
+                <div id="label-integrity" class="text-[10px]">INTEGRIDAD DE HARDWARE</div>
                 <div id="stat-luck" class="text-xl">100%</div>
             </div>
         </div>
@@ -289,8 +358,8 @@
             <div class="md:col-span-2 border border-[#33ff33] p-4 flex flex-col bg-[#0d0d0f] relative">
                 <div id="critical-overlay" class="absolute inset-0 pointer-events-none hidden"></div>
                 <div class="flex-grow mb-4 text-lg overflow-y-auto" id="event-display">
-                    <p class="text-white mb-2">>> INICIO DE TRANSMISIÓN CRÍPTICA...</p>
-                    <p>Bienvenido, sujeto orgánico. Mis circuitos de lógica están de vacaciones. Disfruta del vacío.</p>
+                    <p id="initial-transmission" class="text-white mb-2">>> INICIO DE TRANSMISIÓN CRÍPTICA...</p>
+                    <p id="initial-welcome">Bienvenido, sujeto orgánico. Mis circuitos de lógica están de vacaciones. Disfruta del vacío.</p>
                 </div>
                 
                 <div id="log" class="log-container text-xs pt-2">
@@ -301,46 +370,46 @@
             <!-- Controles -->
             <div class="border border-[#33ff33] p-4 flex min-h-0 flex-col justify-between bg-[#0d0d0f]">
                 <div class="control-scroll space-y-3 flex-1 pr-1">
-                    <h2 class="text-lg border-b border-[#33ff33] pb-1 mb-2">PANEL DE CONTROL</h2>
+                    <h2 id="control-title" class="text-lg border-b border-[#33ff33] pb-1 mb-2">PANEL DE CONTROL</h2>
                     <button onclick="performAction('repair')" class="terminal-btn w-full p-2 text-left text-sm">
-                         [1] SOPORTE VITAL <span id="repair-cost">(-4 ENE)</span>
+                         <span id="action-repair">[1] SOPORTE VITAL</span> <span id="repair-cost">(-4 ENE)</span>
                          <div id="repair-info" class="text-[10px] opacity-60">Éxito: 85% · Oxígeno +12 / desgaste posterior posible</div>
                     </button>
                     <button onclick="performAction('meditate')" class="terminal-btn w-full p-2 text-left text-sm">
-                         [2] DESCANSO GUIADO <span id="meditate-cost">(-4 ENE)</span>
-                         <div class="text-[10px] opacity-60">Cordura +15 · fatiga: -1 energía mañana</div>
+                         <span id="action-meditate">[2] DESCANSO GUIADO</span> <span id="meditate-cost">(-4 ENE)</span>
+                         <div id="meditate-info" class="text-[10px] opacity-60">Cordura +15 · fatiga: -1 energía mañana</div>
                     </button>
                     <button onclick="performAction('scavenge')" class="terminal-btn w-full p-2 text-left text-sm">
-                         [3] MANTENIMIENTO PREVENTIVO <span id="scavenge-cost">(-4 ENE)</span>
-                         <div class="text-[10px] opacity-60">Integridad +12% · consume Oxígeno -4</div>
+                         <span id="action-scavenge">[3] MANTENIMIENTO PREVENTIVO</span> <span id="scavenge-cost">(-4 ENE)</span>
+                         <div id="scavenge-info" class="text-[10px] opacity-60">Integridad +12% · consume Oxígeno -4</div>
                      </button>
                      <button onclick="performAction('echo')" class="terminal-btn w-full p-2 text-left text-sm">
-                         [4] CONSULTAR A ECHO-9 <span id="echo-cost">(-3 ENE)</span>
-                         <div class="text-[10px] opacity-60">Consejo: puede mentir y provocar un fallo</div>
+                         <span id="action-echo">[4] CONSULTAR A ECHO-9</span> <span id="echo-cost">(-3 ENE)</span>
+                         <div id="echo-info" class="text-[10px] opacity-60">Consejo: puede mentir y provocar un fallo</div>
                      </button>
                      <button onclick="performAction('emergency')" class="terminal-btn w-full p-2 text-left text-sm">
-                         [5] REPARACIÓN DE EMERGENCIA <span id="emergency-cost">(-6 ENE)</span>
-                         <div class="text-[10px] opacity-60">Integridad +18% · riesgo de eventos futuros</div>
+                         <span id="action-emergency">[5] REPARACIÓN DE EMERGENCIA</span> <span id="emergency-cost">(-6 ENE)</span>
+                         <div id="emergency-info" class="text-[10px] opacity-60">Integridad +18% · riesgo de eventos futuros</div>
                     </button>
                      <button onclick="performAction('explore')" class="terminal-btn w-full p-2 text-left text-sm">
-                         [6] EXPLORAR LA ESTACIÓN <span id="explore-cost">(-2 ENE)</span>
-                         <div class="text-[10px] opacity-60">Elige una zona · puede estar bloqueada</div>
+                         <span id="action-explore">[6] EXPLORAR LA ESTACIÓN</span> <span id="explore-cost">(-2 ENE)</span>
+                         <div id="explore-info" class="text-[10px] opacity-60">Elige una zona · puede estar bloqueada</div>
                      </button>
                       <button onclick="performAction('records')" class="terminal-btn w-full p-2 text-left text-sm">
-                          [7] REVISAR REGISTROS <span id="records-cost">(-1 ENE)</span>
-                          <div class="text-[10px] opacity-60">Lee una grabación recuperada · sin consumirla</div>
+                           <span id="action-records">[7] REVISAR REGISTROS</span> <span id="records-cost">(-1 ENE)</span>
+                           <div id="records-info" class="text-[10px] opacity-60">Lee una grabación recuperada · sin consumirla</div>
                       </button>
                       <button onclick="performAction('observe')" class="terminal-btn w-full p-2 text-left text-sm">
-                          [8] OBSERVAR EXTERIOR <span id="observe-cost">(-1 ENE)</span>
-                          <div class="text-[10px] opacity-60">Buscar una señal en el vacío</div>
+                           <span id="action-observe">[8] OBSERVAR EXTERIOR</span> <span id="observe-cost">(-1 ENE)</span>
+                           <div id="observe-info" class="text-[10px] opacity-60">Buscar una señal en el vacío</div>
                       </button>
                       <button onclick="performAction('inspect')" class="terminal-btn w-full p-2 text-left text-sm">
-                          [9] INSPECCIONAR OBJETO <span id="inspect-cost">(-1 ENE)</span>
-                          <div class="text-[10px] opacity-60">Examinar un objeto del inventario</div>
+                           <span id="action-inspect">[9] INSPECCIONAR OBJETO</span> <span id="inspect-cost">(-1 ENE)</span>
+                           <div id="inspect-info" class="text-[10px] opacity-60">Examinar un objeto del inventario</div>
                       </button>
                       <button onclick="performAction('manipulate')" class="terminal-btn w-full p-2 text-left text-sm">
-                          [10] MANIPULAR ECHO <span id="manipulate-cost">(-2 ENE)</span>
-                          <div class="text-[10px] opacity-60">Forzar una respuesta · resultado incierto</div>
+                           <span id="action-manipulate">[10] MANIPULAR ECHO</span> <span id="manipulate-cost">(-2 ENE)</span>
+                           <div id="manipulate-info" class="text-[10px] opacity-60">Forzar una respuesta · resultado incierto</div>
                       </button>
                      <div id="station-status" class="module-panel">
                          CARGANDO MAPA DE LA ESTACIÓN...
@@ -354,20 +423,20 @@
                      <div id="forecast" class="border border-dashed border-[#33ff33] p-2 text-[11px] text-yellow-400">
                          SIN ACCIÓN HOY: Oxígeno -7 · Cordura -7
                      </div>
-                    <button onclick="nextDay()" id="btn-next-day" class="terminal-btn w-full p-4 text-center bg-[#33ff33] text-black font-bold mt-4">
+                     <button onclick="nextDay()" id="btn-next-day" class="terminal-btn w-full p-4 text-center bg-[#33ff33] text-black font-bold mt-4">
                         [ESPACIO] PASAR 24H
                     </button>
                 </div>
 
                 <div class="mt-4 p-2 border border-dashed border-[#33ff33] text-[11px]">
-                    IA 'ECHO-9':<br>
+                    <span id="echo-label">IA 'ECHO-9':</span><br>
                      <span id="ia-message" class="italic text-yellow-500">"He soñado que los cables eran raíces y nosotros la fruta."</span>
                      <div class="mt-2 text-[10px] text-green-300">
-                         CONFIANZA: <span id="echo-trust">20</span>/100 ·
-                         MODO: <span id="echo-mode">INESTABLE</span> ·
-                         GRABACIONES: <span id="recording-count">0</span> ·
-                          LOGROS: <span id="achievement-count">0</span> ·
-                          DECISIONES OBSERVADAS: <span id="decision-count">0</span>
+                          <span id="echo-confidence-label">CONFIANZA</span>: <span id="echo-trust">20</span>/100 ·
+                          <span id="echo-mode-label">MODO</span>: <span id="echo-mode">INESTABLE</span> ·
+                          <span id="recordings-label">GRABACIONES</span>: <span id="recording-count">0</span> ·
+                           <span id="achievements-label">LOGROS</span>: <span id="achievement-count">0</span> ·
+                           <span id="decisions-label">DECISIONES OBSERVADAS</span>: <span id="decision-count">0</span>
                      </div>
                 </div>
             </div>
@@ -375,8 +444,8 @@
 
         <!-- Footer -->
         <div class="flex justify-between text-[10px] opacity-50 z-20">
-            <span>LOGIC_STATUS: UNSTABLE</span>
-            <span>AI_MOOD: NIHILISTIC</span>
+             <span id="logic-status">LOGIC_STATUS: UNSTABLE</span>
+             <span id="ai-mood">AI_MOOD: NIHILISTIC</span>
         </div>
     </div>
 
@@ -394,7 +463,9 @@
     <script>
         const SAVE_KEY = 'estacion-icaro-save-v2';
         const PROFILE_KEY = 'estacion-icaro-profile-v1';
+         const LANGUAGE_KEY = 'estacion-icaro-language-v1';
         const MAX_RESOURCE = 110;
+         const DAILY_ENERGY = 9;
         const ACTION_COSTS = {
             repair: 4,
             meditate: 4,
@@ -408,9 +479,449 @@
              manipulate: 2
         };
 
+         const languageData = {
+             es: {
+                 "language-kicker": "SISTEMA DE ARRANQUE · SELECCIÓN DE IDIOMA",
+                 "language-prompt": "Selecciona el idioma de la interfaz:",
+                 "language-note": "Podrás cambiarlo al volver a cargar el juego.",
+                 "start-title": "ESTACIÓN ÍCARO",
+                 "start-subtitle": "Sector de Minería Profunda - El Mes de Hierro",
+                 "boot-1": "> Cargando protocolos de soporte vital (DEFECTUOSOS)...",
+                 "boot-2": "> Sincronizando IA ECHO-9 (PERSONALIDAD: INESTABLE)...",
+                 "boot-3": "> Verificando integridad del hardware (82% - ADVERTENCIA)...",
+                 "boot-4": "> Objetivo: Sobrevivir 30 días. No esperes rescate.",
+                 "boot-5": "> Nota de tripulación: alguien dejó una voz grabada dentro de ECHO-9.",
+                 "start-button": "INICIAR TURNO DE NOCHE",
+                 "continue-btn": "CONTINUAR PARTIDA GUARDADA",
+                 "custom-mode-title": "NUEVO MODO DESBLOQUEADO",
+                 "custom-mode-help": "PERSONALIZA LA SIGUIENTE PARTIDA. PUEDES COMBINAR MODOS.",
+                 "mode-iron-plus": "MES DE HIERRO+",
+                 "mode-iron-plus-help": "Presión diaria +20% · eventos +10%",
+                 "mode-echo": "MODO ECHO",
+                 "mode-echo-help": "ECHO-9 comienza con confianza 70",
+                 "mode-silence": "MODO SILENCIO",
+                 "mode-silence-help": "No puedes consultar a ECHO-9",
+                 "mode-iron-pure": "MODO HIERRO PURO",
+                 "mode-iron-pure-help": "Sin guardado automático ni continuación",
+                 "mode-anomaly": "MODO ANOMALÍA",
+                 "mode-anomaly-help": "Eventos raros aparecen con frecuencia x3",
+                 "corporation-note": "Propiedad de la corporación helion. no se admiten quejas post-mortem.",
+                 "ai-hint": "La IA te dará pistas, confía en ella.",
+                 "label-day": "TURNO MENSUAL",
+                 "label-energy": "ENERGÍA",
+                 "label-oxygen": "OXÍGENO",
+                 "label-sanity": "CORDURA",
+                 "label-integrity": "INTEGRIDAD DE HARDWARE",
+                 "initial-transmission": ">> INICIO DE TRANSMISIÓN CRÍPTICA...",
+                 "initial-welcome": "Bienvenido, sujeto orgánico. Mis circuitos de lógica están de vacaciones. Disfruta del vacío.",
+                 "control-title": "PANEL DE CONTROL",
+                 "action-repair": "[1] SOPORTE VITAL",
+                 "repair-info": "Éxito: 85% · Oxígeno +12 / desgaste posterior posible",
+                 "action-meditate": "[2] DESCANSO GUIADO",
+                 "meditate-info": "Cordura +15 · fatiga: -1 energía mañana",
+                 "action-scavenge": "[3] MANTENIMIENTO PREVENTIVO",
+                 "scavenge-info": "Integridad +12% · consume Oxígeno -4",
+                 "action-echo": "[4] CONSULTAR A ECHO-9",
+                 "echo-info": "Consejo: puede mentir y provocar un fallo",
+                 "action-emergency": "[5] REPARACIÓN DE EMERGENCIA",
+                 "emergency-info": "Integridad +18% · riesgo de eventos futuros",
+                 "action-explore": "[6] EXPLORAR LA ESTACIÓN",
+                 "explore-info": "Elige una zona · puede estar bloqueada",
+                 "action-records": "[7] REVISAR REGISTROS",
+                 "records-info": "Lee una grabación recuperada · sin consumirla",
+                 "action-observe": "[8] OBSERVAR EXTERIOR",
+                 "observe-info": "Buscar una señal en el vacío",
+                 "action-inspect": "[9] INSPECCIONAR OBJETO",
+                 "inspect-info": "Examinar un objeto del inventario",
+                 "action-manipulate": "[10] MANIPULAR ECHO",
+                 "manipulate-info": "Forzar una respuesta · resultado incierto",
+                 "btn-next-day": "[ESPACIO] PASAR 24H",
+                 "echo-label": "IA 'ECHO-9':",
+                 "echo-confidence-label": "CONFIANZA",
+                 "echo-mode-label": "MODO",
+                 "recordings-label": "GRABACIONES",
+                 "achievements-label": "LOGROS",
+                 "decisions-label": "DECISIONES OBSERVADAS",
+                 "logic-status": "LOGIC_STATUS: INESTABLE",
+                 "ai-mood": "AI_MOOD: NIHILISTA",
+                 "meta-title": "HISTORIAL DE SUPERVIVENCIA",
+                 "meta-completed": "PARTIDAS COMPLETADAS",
+                 "meta-deaths": "MUERTES",
+                 "meta-endings": "FINALES DESCUBIERTOS",
+                 "meta-secrets": "SECRETOS DESCUBIERTOS",
+                 "meta-loading": "CARGANDO HISTORIAL DE SUPERVIVENCIA...",
+                 "forecast": "SIN ACCIÓN HOY",
+                 "forecast-oxygen": "Oxígeno",
+                 "forecast-sanity": "Cordura",
+                 "forecast-tomorrow": "Evento mañana",
+                 "forecast-energy": "Energía siguiente",
+                 "forecast-stress": "Inestabilidad",
+                 "energy-unit": "ENE",
+                 "blocked": "BLOQUEADO",
+                 "restart-death": "REINICIAR ERROR",
+                 "restart-win": "VOLVER A EMPEZAR",
+                 lang: "es"
+             },
+             en: {
+                 "language-kicker": "BOOT SYSTEM · LANGUAGE SELECTION",
+                 "language-prompt": "Select the interface language:",
+                 "language-note": "You can change it by reloading the game.",
+                 "start-title": "ICARUS STATION",
+                 "start-subtitle": "Deep Mining Sector - The Iron Month",
+                 "boot-1": "> Loading life-support protocols (FAULTY)...",
+                 "boot-2": "> Synchronizing AI ECHO-9 (PERSONALITY: UNSTABLE)...",
+                 "boot-3": "> Checking hardware integrity (82% - WARNING)...",
+                 "boot-4": "> Objective: Survive 30 days. Do not expect rescue.",
+                 "boot-5": "> Crew note: someone left a recorded voice inside ECHO-9.",
+                 "start-button": "START NIGHT SHIFT",
+                 "continue-btn": "CONTINUE SAVED GAME",
+                 "custom-mode-title": "NEW MODE UNLOCKED",
+                 "custom-mode-help": "CUSTOMIZE THE NEXT GAME. MODES CAN BE COMBINED.",
+                 "mode-iron-plus": "IRON MONTH+",
+                 "mode-iron-plus-help": "Daily pressure +20% · events +10%",
+                 "mode-echo": "ECHO MODE",
+                 "mode-echo-help": "ECHO-9 starts with trust 70",
+                 "mode-silence": "SILENCE MODE",
+                 "mode-silence-help": "You cannot consult ECHO-9",
+                 "mode-iron-pure": "PURE IRON MODE",
+                 "mode-iron-pure-help": "No autosave or continuation",
+                 "mode-anomaly": "ANOMALY MODE",
+                 "mode-anomaly-help": "Rare events appear at x3 frequency",
+                 "corporation-note": "Property of Helion Corporation. No post-mortem complaints accepted.",
+                 "ai-hint": "The AI will give you clues. Trust it.",
+                 "label-day": "MONTHLY SHIFT",
+                 "label-energy": "ENERGY",
+                 "label-oxygen": "OXYGEN",
+                 "label-sanity": "SANITY",
+                 "label-integrity": "HARDWARE INTEGRITY",
+                 "initial-transmission": ">> CRYPTIC TRANSMISSION START...",
+                 "initial-welcome": "Welcome, organic subject. My logic circuits are on vacation. Enjoy the void.",
+                 "control-title": "CONTROL PANEL",
+                 "action-repair": "[1] LIFE SUPPORT",
+                 "repair-info": "Success: 85% · Oxygen +12 / possible later wear",
+                 "action-meditate": "[2] GUIDED REST",
+                 "meditate-info": "Sanity +15 · fatigue: -1 energy tomorrow",
+                 "action-scavenge": "[3] PREVENTIVE MAINTENANCE",
+                 "scavenge-info": "Integrity +12% · consumes Oxygen -4",
+                 "action-echo": "[4] CONSULT ECHO-9",
+                 "echo-info": "Advice: it may lie and cause a failure",
+                 "action-emergency": "[5] EMERGENCY REPAIR",
+                 "emergency-info": "Integrity +18% · risk of future events",
+                 "action-explore": "[6] EXPLORE THE STATION",
+                 "explore-info": "Choose a zone · it may be locked",
+                 "action-records": "[7] REVIEW RECORDINGS",
+                 "records-info": "Read a recovered recording · does not consume it",
+                 "action-observe": "[8] OBSERVE EXTERIOR",
+                 "observe-info": "Search for a signal in the void",
+                 "action-inspect": "[9] INSPECT OBJECT",
+                 "inspect-info": "Examine an item from your inventory",
+                 "action-manipulate": "[10] MANIPULATE ECHO",
+                 "manipulate-info": "Force a response · uncertain result",
+                 "btn-next-day": "[SPACE] PASS 24H",
+                 "echo-label": "AI 'ECHO-9':",
+                 "echo-confidence-label": "TRUST",
+                 "echo-mode-label": "MODE",
+                 "recordings-label": "RECORDINGS",
+                 "achievements-label": "ACHIEVEMENTS",
+                 "decisions-label": "OBSERVED DECISIONS",
+                 "logic-status": "LOGIC_STATUS: UNSTABLE",
+                 "ai-mood": "AI_MOOD: NIHILISTIC",
+                 "meta-title": "SURVIVAL HISTORY",
+                 "meta-completed": "GAMES COMPLETED",
+                 "meta-deaths": "DEATHS",
+                 "meta-endings": "ENDINGS DISCOVERED",
+                 "meta-secrets": "SECRETS DISCOVERED",
+                 "meta-loading": "LOADING SURVIVAL HISTORY...",
+                 "forecast": "NO ACTION TODAY",
+                 "forecast-oxygen": "Oxygen",
+                 "forecast-sanity": "Sanity",
+                 "forecast-tomorrow": "Event tomorrow",
+                 "forecast-energy": "Next energy",
+                 "forecast-stress": "Instability",
+                 "energy-unit": "NRG",
+                 "blocked": "LOCKED",
+                 "restart-death": "RESTART ERROR",
+                 "restart-win": "START OVER",
+                 lang: "en"
+             },
+             fr: {
+                 "language-kicker": "SYSTÈME DE DÉMARRAGE · CHOIX DE LA LANGUE",
+                 "language-prompt": "Sélectionnez la langue de l'interface :",
+                 "language-note": "Vous pourrez la changer en rechargeant le jeu.",
+                 "start-title": "STATION ICARUS",
+                 "start-subtitle": "Secteur minier profond - Le Mois de Fer",
+                 "boot-1": "> Chargement des protocoles de survie (DÉFECTUEUX)...",
+                 "boot-2": "> Synchronisation de l'IA ECHO-9 (PERSONNALITÉ : INSTABLE)...",
+                 "boot-3": "> Vérification de l'intégrité matérielle (82 % - AVERTISSEMENT)...",
+                 "boot-4": "> Objectif : survivre 30 jours. N'attendez aucun secours.",
+                 "boot-5": "> Note de l'équipage : quelqu'un a laissé une voix enregistrée dans ECHO-9.",
+                 "start-button": "COMMENCER LE SERVICE DE NUIT",
+                 "continue-btn": "CONTINUER LA PARTIE SAUVEGARDÉE",
+                 "custom-mode-title": "NOUVEAU MODE DÉBLOQUÉ",
+                 "custom-mode-help": "PERSONNALISEZ LA PROCHAINE PARTIE. LES MODES SONT CUMULABLES.",
+                 "mode-iron-plus": "MOIS DE FER+",
+                 "mode-iron-plus-help": "Pression quotidienne +20 % · événements +10 %",
+                 "mode-echo": "MODE ECHO",
+                 "mode-echo-help": "ECHO-9 commence avec une confiance de 70",
+                 "mode-silence": "MODE SILENCE",
+                 "mode-silence-help": "Vous ne pouvez pas consulter ECHO-9",
+                 "mode-iron-pure": "MODE FER PUR",
+                 "mode-iron-pure-help": "Sans sauvegarde automatique ni reprise",
+                 "mode-anomaly": "MODE ANOMALIE",
+                 "mode-anomaly-help": "Les événements rares apparaissent 3 fois plus souvent",
+                 "corporation-note": "Propriété de la corporation Helion. Aucune plainte post-mortem acceptée.",
+                 "ai-hint": "L'IA vous donnera des indices. Faites-lui confiance.",
+                 "label-day": "SERVICE MENSUEL",
+                 "label-energy": "ÉNERGIE",
+                 "label-oxygen": "OXYGÈNE",
+                 "label-sanity": "SANTÉ MENTALE",
+                 "label-integrity": "INTÉGRITÉ DU MATÉRIEL",
+                 "initial-transmission": ">> DÉBUT DE LA TRANSMISSION CRYPTIQUE...",
+                 "initial-welcome": "Bienvenue, sujet organique. Mes circuits logiques sont en vacances. Profitez du vide.",
+                 "control-title": "PANNEAU DE CONTRÔLE",
+                 "action-repair": "[1] SYSTÈME DE SURVIE",
+                 "repair-info": "Réussite : 85 % · Oxygène +12 / usure ultérieure possible",
+                 "action-meditate": "[2] REPOS GUIDÉ",
+                 "meditate-info": "Santé mentale +15 · fatigue : -1 énergie demain",
+                 "action-scavenge": "[3] MAINTENANCE PRÉVENTIVE",
+                 "scavenge-info": "Intégrité +12 % · consomme Oxygène -4",
+                 "action-echo": "[4] CONSULTER ECHO-9",
+                 "echo-info": "Conseil : il peut mentir et provoquer une panne",
+                 "action-emergency": "[5] RÉPARATION D'URGENCE",
+                 "emergency-info": "Intégrité +18 % · risque d'événements futurs",
+                 "action-explore": "[6] EXPLORER LA STATION",
+                 "explore-info": "Choisissez une zone · elle peut être verrouillée",
+                 "action-records": "[7] RELIRE LES ENREGISTREMENTS",
+                 "records-info": "Lire un enregistrement récupéré · ne le consomme pas",
+                 "action-observe": "[8] OBSERVER L'EXTÉRIEUR",
+                 "observe-info": "Chercher un signal dans le vide",
+                 "action-inspect": "[9] INSPECTER L'OBJET",
+                 "inspect-info": "Examiner un objet de l'inventaire",
+                 "action-manipulate": "[10] MANIPULER ECHO",
+                 "manipulate-info": "Forcer une réponse · résultat incertain",
+                 "btn-next-day": "[ESPACE] PASSER 24 H",
+                 "echo-label": "IA « ECHO-9 » :",
+                 "echo-confidence-label": "CONFIANCE",
+                 "echo-mode-label": "MODE",
+                 "recordings-label": "ENREGISTREMENTS",
+                 "achievements-label": "SUCCÈS",
+                 "decisions-label": "DÉCISIONS OBSERVÉES",
+                 "logic-status": "LOGIC_STATUS : INSTABLE",
+                 "ai-mood": "AI_MOOD : NIHILISTE",
+                 "meta-title": "HISTORIQUE DE SURVIE",
+                 "meta-completed": "PARTIES TERMINÉES",
+                 "meta-deaths": "MORTS",
+                 "meta-endings": "FINALES DÉCOUVERTES",
+                 "meta-secrets": "SECRETS DÉCOUVERTS",
+                 "meta-loading": "CHARGEMENT DE L'HISTORIQUE...",
+                 "forecast": "AUCUNE ACTION AUJOURD'HUI",
+                 "forecast-oxygen": "Oxygène",
+                 "forecast-sanity": "Santé mentale",
+                 "forecast-tomorrow": "Événement demain",
+                 "forecast-energy": "Énergie suivante",
+                 "forecast-stress": "Instabilité",
+                 "energy-unit": "NRJ",
+                 "blocked": "BLOQUÉ",
+                 "restart-death": "REDÉMARRER L'ERREUR",
+                 "restart-win": "RECOMMENCER",
+                 lang: "fr"
+             },
+             it: {
+                 "language-kicker": "SISTEMA DI AVVIO · SELEZIONE LINGUA",
+                 "language-prompt": "Seleziona la lingua dell'interfaccia:",
+                 "language-note": "Potrai cambiarla ricaricando il gioco.",
+                 "start-title": "STAZIONE ICARO",
+                 "start-subtitle": "Settore Minerario Profondo - Il Mese di Ferro",
+                 "boot-1": "> Caricamento protocolli di supporto vitale (DIFETTOSI)...",
+                 "boot-2": "> Sincronizzazione IA ECHO-9 (PERSONALITÀ: INSTABILE)...",
+                 "boot-3": "> Verifica integrità hardware (82% - AVVISO)...",
+                 "boot-4": "> Obiettivo: sopravvivere 30 giorni. Non aspettarti soccorsi.",
+                 "boot-5": "> Nota dell'equipaggio: qualcuno ha lasciato una voce registrata dentro ECHO-9.",
+                 "start-button": "INIZIA IL TURNO DI NOTTE",
+                 "continue-btn": "CONTINUA PARTITA SALVATA",
+                 "custom-mode-title": "NUOVA MODALITÀ SBLOCCATA",
+                 "custom-mode-help": "PERSONALIZZA LA PROSSIMA PARTITA. PUOI COMBINARE LE MODALITÀ.",
+                 "mode-iron-plus": "MESE DI FERRO+",
+                 "mode-iron-plus-help": "Pressione giornaliera +20% · eventi +10%",
+                 "mode-echo": "MODALITÀ ECHO",
+                 "mode-echo-help": "ECHO-9 inizia con fiducia 70",
+                 "mode-silence": "MODALITÀ SILENZIO",
+                 "mode-silence-help": "Non puoi consultare ECHO-9",
+                 "mode-iron-pure": "MODALITÀ FERRO PURO",
+                 "mode-iron-pure-help": "Senza salvataggio automatico né continuazione",
+                 "mode-anomaly": "MODALITÀ ANOMALIA",
+                 "mode-anomaly-help": "Gli eventi rari appaiono con frequenza x3",
+                 "corporation-note": "Proprietà della Helion Corporation. Nessun reclamo post-mortem.",
+                 "ai-hint": "L'IA ti darà degli indizi. Fidati di lei.",
+                 "label-day": "TURNO MENSILE",
+                 "label-energy": "ENERGIA",
+                 "label-oxygen": "OSSIGENO",
+                 "label-sanity": "SANITÀ MENTALE",
+                 "label-integrity": "INTEGRITÀ HARDWARE",
+                 "initial-transmission": ">> INIZIO TRASMISSIONE CRIPTICA...",
+                 "initial-welcome": "Benvenuto, soggetto organico. I miei circuiti logici sono in vacanza. Goditi il vuoto.",
+                 "control-title": "PANNELLO DI CONTROLLO",
+                 "action-repair": "[1] SUPPORTO VITALE",
+                 "repair-info": "Successo: 85% · Ossigeno +12 / possibile usura successiva",
+                 "action-meditate": "[2] RIPOSO GUIDATO",
+                 "meditate-info": "Sanità mentale +15 · stanchezza: -1 energia domani",
+                 "action-scavenge": "[3] MANUTENZIONE PREVENTIVA",
+                 "scavenge-info": "Integrità +12% · consuma Ossigeno -4",
+                 "action-echo": "[4] CONSULTA ECHO-9",
+                 "echo-info": "Consiglio: potrebbe mentire e causare un guasto",
+                 "action-emergency": "[5] RIPARAZIONE D'EMERGENZA",
+                 "emergency-info": "Integrità +18% · rischio di eventi futuri",
+                 "action-explore": "[6] ESPLORA LA STAZIONE",
+                 "explore-info": "Scegli una zona · potrebbe essere bloccata",
+                 "action-records": "[7] RIVEDI REGISTRAZIONI",
+                 "records-info": "Leggi una registrazione recuperata · non la consuma",
+                 "action-observe": "[8] OSSERVA L'ESTERNO",
+                 "observe-info": "Cerca un segnale nel vuoto",
+                 "action-inspect": "[9] ISPEZIONA OGGETTO",
+                 "inspect-info": "Esamina un oggetto dell'inventario",
+                 "action-manipulate": "[10] MANIPOLA ECHO",
+                 "manipulate-info": "Forza una risposta · risultato incerto",
+                 "btn-next-day": "[SPAZIO] PASSA 24 ORE",
+                 "echo-label": "IA 'ECHO-9':",
+                 "echo-confidence-label": "FIDUCIA",
+                 "echo-mode-label": "MODALITÀ",
+                 "recordings-label": "REGISTRAZIONI",
+                 "achievements-label": "TRAGUARDI",
+                 "decisions-label": "DECISIONI OSSERVATE",
+                 "logic-status": "LOGIC_STATUS: INSTABILE",
+                 "ai-mood": "AI_MOOD: NIHILISTA",
+                 "meta-title": "STORICO SOPRAVVIVENZA",
+                 "meta-completed": "PARTITE COMPLETATE",
+                 "meta-deaths": "MORTI",
+                 "meta-endings": "FINALI SCOPERTI",
+                 "meta-secrets": "SEGRETI SCOPERTI",
+                 "meta-loading": "CARICAMENTO STORICO SOPRAVVIVENZA...",
+                 "forecast": "NESSUNA AZIONE OGGI",
+                 "forecast-oxygen": "Ossigeno",
+                 "forecast-sanity": "Sanità mentale",
+                 "forecast-tomorrow": "Evento domani",
+                 "forecast-energy": "Energia successiva",
+                 "forecast-stress": "Instabilità",
+                 "energy-unit": "ENE",
+                 "blocked": "BLOCCATO",
+                 "restart-death": "RIAVVIA ERRORE",
+                 "restart-win": "RICOMINCIA",
+                 lang: "it"
+             },
+             de: {
+                 "language-kicker": "STARTSYSTEM · SPRACHAUSWAHL",
+                 "language-prompt": "Sprache der Benutzeroberfläche wählen:",
+                 "language-note": "Du kannst die Sprache beim Neuladen des Spiels ändern.",
+                 "start-title": "STATION IKARUS",
+                 "start-subtitle": "Tiefseebergbausektor - Der Eisenmonat",
+                 "boot-1": "> Lebenserhaltungsprotokolle werden geladen (FEHLERHAFT)...",
+                 "boot-2": "> KI ECHO-9 wird synchronisiert (PERSÖNLICHKEIT: INSTABIL)...",
+                 "boot-3": "> Hardwareintegrität wird geprüft (82 % - WARNUNG)...",
+                 "boot-4": "> Ziel: 30 Tage überleben. Erwarte keine Rettung.",
+                 "boot-5": "> Crewnotiz: Jemand hat eine aufgezeichnete Stimme in ECHO-9 hinterlassen.",
+                 "start-button": "NACHTSCHICHT STARTEN",
+                 "continue-btn": "GESPEICHERTES SPIEL FORTSETZEN",
+                 "custom-mode-title": "NEUER MODUS FREIGESCHALTET",
+                 "custom-mode-help": "PASSE DAS NÄCHSTE SPIEL AN. MODI KÖNNEN KOMBINERT WERDEN.",
+                 "mode-iron-plus": "EISENMONAT+",
+                 "mode-iron-plus-help": "Täglicher Druck +20 % · Ereignisse +10 %",
+                 "mode-echo": "ECHO-MODUS",
+                 "mode-echo-help": "ECHO-9 beginnt mit Vertrauen 70",
+                 "mode-silence": "STILLE-MODUS",
+                 "mode-silence-help": "Du kannst ECHO-9 nicht befragen",
+                 "mode-iron-pure": "REINER-EISEN-MODUS",
+                 "mode-iron-pure-help": "Kein automatisches Speichern oder Fortsetzen",
+                 "mode-anomaly": "ANOMALIE-MODUS",
+                 "mode-anomaly-help": "Seltene Ereignisse erscheinen dreimal so häufig",
+                 "corporation-note": "Eigentum der Helion Corporation. Keine Beschwerden nach dem Tod.",
+                 "ai-hint": "Die KI gibt dir Hinweise. Vertraue ihr.",
+                 "label-day": "MONATLICHE SCHICHT",
+                 "label-energy": "ENERGIE",
+                 "label-oxygen": "SAUERSTOFF",
+                 "label-sanity": "VERSTAND",
+                 "label-integrity": "HARDWAREINTEGRITÄT",
+                 "initial-transmission": ">> KRYPTISCHE ÜBERTRAGUNG BEGINNT...",
+                 "initial-welcome": "Willkommen, organisches Subjekt. Meine Logikschaltkreise sind im Urlaub. Genieße die Leere.",
+                 "control-title": "STEUERPULT",
+                 "action-repair": "[1] LEBENSERHALTUNG",
+                 "repair-info": "Erfolg: 85 % · Sauerstoff +12 / späterer Verschleiß möglich",
+                 "action-meditate": "[2] GEFÜHRTE RUHE",
+                 "meditate-info": "Verstand +15 · Erschöpfung: -1 Energie morgen",
+                 "action-scavenge": "[3] VORBEUGENDE WARTUNG",
+                 "scavenge-info": "Integrität +12 % · verbraucht Sauerstoff -4",
+                 "action-echo": "[4] ECHO-9 BEFRAGEN",
+                 "echo-info": "Hinweis: Es kann lügen und einen Fehler verursachen",
+                 "action-emergency": "[5] NOTREPARATUR",
+                 "emergency-info": "Integrität +18 % · Risiko zukünftiger Ereignisse",
+                 "action-explore": "[6] STATION ERKUNDEN",
+                 "explore-info": "Wähle eine Zone · sie könnte verschlossen sein",
+                 "action-records": "[7] AUFZEICHNUNGEN PRÜFEN",
+                 "records-info": "Eine Aufzeichnung lesen · sie wird nicht verbraucht",
+                 "action-observe": "[8] AUSSENBEREICH BEOBACHTEN",
+                 "observe-info": "Nach einem Signal in der Leere suchen",
+                 "action-inspect": "[9] GEGENSTAND UNTERSUCHEN",
+                 "inspect-info": "Einen Gegenstand im Inventar untersuchen",
+                 "action-manipulate": "[10] ECHO MANIPULIEREN",
+                 "manipulate-info": "Eine Antwort erzwingen · ungewisses Ergebnis",
+                 "btn-next-day": "[LEERTASTE] 24 STUNDEN ÜBERSPRINGEN",
+                 "echo-label": "KI 'ECHO-9':",
+                 "echo-confidence-label": "VERTRAUEN",
+                 "echo-mode-label": "MODUS",
+                 "recordings-label": "AUFZEICHNUNGEN",
+                 "achievements-label": "ERFOLGE",
+                 "decisions-label": "BEOBACHTETE ENTSCHEIDUNGEN",
+                 "logic-status": "LOGIC_STATUS: INSTABIL",
+                 "ai-mood": "AI_MOOD: NIHILISTISCH",
+                 "meta-title": "ÜBERLEBENSHISTORIE",
+                 "meta-completed": "ABGESCHLOSSENE SPIELE",
+                 "meta-deaths": "TODE",
+                 "meta-endings": "ENTDECKTE ENDEN",
+                 "meta-secrets": "ENTDECKTE GEHEIMNISSE",
+                 "meta-loading": "ÜBERLEBENSHISTORIE WIRD GELADEN...",
+                 "forecast": "HEUTE KEINE AKTION",
+                 "forecast-oxygen": "Sauerstoff",
+                 "forecast-sanity": "Verstand",
+                 "forecast-tomorrow": "Ereignis morgen",
+                 "forecast-energy": "Nächste Energie",
+                 "forecast-stress": "Instabilität",
+                 "energy-unit": "ENE",
+                 "blocked": "GESPERRT",
+                 "restart-death": "FEHLER NEUSTARTEN",
+                 "restart-win": "NEU BEGINNEN",
+                 lang: "de"
+             }
+         };
+
+         let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || "es";
+         if (!languageData[currentLanguage]) currentLanguage = "es";
+
+         function tr(key) {
+             return languageData[currentLanguage]?.[key] ??
+                 languageData.es[key] ??
+                 key;
+         }
+
+         function applyLanguage() {
+             document.documentElement.lang = languageData[currentLanguage].lang;
+             Object.keys(languageData[currentLanguage]).forEach(key => {
+                 const element = document.getElementById(key);
+                 if (element && key !== "lang") element.innerText = tr(key);
+             });
+             renderMetaProgress();
+             if (state.gameStarted) updateUI();
+         }
+
+         function selectLanguage(language) {
+             if (!languageData[language]) return;
+             currentLanguage = language;
+             localStorage.setItem(LANGUAGE_KEY, language);
+             applyLanguage();
+             document.getElementById('language-screen').classList.add('hidden');
+         }
+
         let state = {
             day: 1,
-            energy: 7,
+             energy: DAILY_ENERGY,
             oxygen: 90,
             sanity: 90,
             integrity: 100,
@@ -512,11 +1023,11 @@
              if (!panel || !modePanel) return;
 
              panel.innerHTML = `
-                 <div class="text-yellow-400 mb-1">HISTORIAL DE SUPERVIVENCIA</div>
-                 <div>PARTIDAS COMPLETADAS: ${metaProgress.completed}</div>
-                 <div>MUERTES: ${metaProgress.deaths}</div>
-                 <div>FINALES DESCUBIERTOS: ${metaProgress.endings.length}/5</div>
-                 <div>SECRETOS DESCUBIERTOS: ${metaProgress.secrets.length}/${secretDefinitions.length}</div>
+                  <div class="text-yellow-400 mb-1">${tr("meta-title")}</div>
+                  <div>${tr("meta-completed")}: ${metaProgress.completed}</div>
+                  <div>${tr("meta-deaths")}: ${metaProgress.deaths}</div>
+                  <div>${tr("meta-endings")}: ${metaProgress.endings.length}/5</div>
+                  <div>${tr("meta-secrets")}: ${metaProgress.secrets.length}/${secretDefinitions.length}</div>
              `;
              if (metaProgress.customModesUnlocked) {
                  modePanel.classList.remove('hidden');
@@ -1741,11 +2252,11 @@
         }
 
         function getEnergyCapacity() {
-            return 6 + Math.min(3, state.modules.generator);
+             return DAILY_ENERGY - 1 + Math.min(3, state.modules.generator);
         }
 
         function getNextDayEnergy(availableEnergy = state.energy) {
-            const baseReserve = 3 + state.modules.generator;
+             const baseReserve = DAILY_ENERGY - 4 + state.modules.generator;
             const conserved = Math.min(getEnergyCapacity(), baseReserve + Math.floor(availableEnergy / 2));
             return state.meditationFatigue ? Math.max(3, conserved - 1) : conserved;
         }
@@ -1818,21 +2329,21 @@
 
             const repairSuccess = Math.round(45 + state.integrity * 0.4);
             document.getElementById('repair-info').innerText =
-                `Éxito: ${repairSuccess}% · Oxígeno +12 / fallo: +3 y desgaste posterior`;
-             document.getElementById('repair-cost').innerText = `(-${getActionCost('repair')} ENE${getOxygenPenaltyText('repair')})`;
-            document.getElementById('meditate-cost').innerText = `(-${getActionCost('meditate')} ENE)`;
-             document.getElementById('scavenge-cost').innerText = `(-${getActionCost('scavenge')} ENE${getOxygenPenaltyText('scavenge')})`;
+                 `${tr("repair-info").replace("85%", `${repairSuccess}%`)}`;
+              document.getElementById('repair-cost').innerText = `(-${getActionCost('repair')} ${tr("energy-unit")}${getOxygenPenaltyText('repair')})`;
+             document.getElementById('meditate-cost').innerText = `(-${getActionCost('meditate')} ${tr("energy-unit")})`;
+              document.getElementById('scavenge-cost').innerText = `(-${getActionCost('scavenge')} ${tr("energy-unit")}${getOxygenPenaltyText('scavenge')})`;
             document.getElementById('echo-cost').innerText = isModeActive("silence")
-                ? "(BLOQUEADO)"
-                : `(-${getActionCost('echo')} ENE)`;
-             document.getElementById('emergency-cost').innerText = `(-${getActionCost('emergency')} ENE${getOxygenPenaltyText('emergency')})`;
-             document.getElementById('explore-cost').innerText = `(-${getActionCost('explore')} ENE${getOxygenPenaltyText('explore')})`;
-             document.getElementById('records-cost').innerText = `(-${getActionCost('records')} ENE)`;
-             document.getElementById('observe-cost').innerText = `(-${getActionCost('observe')} ENE)`;
-             document.getElementById('inspect-cost').innerText = `(-${getActionCost('inspect')} ENE)`;
-             document.getElementById('manipulate-cost').innerText = `(-${getActionCost('manipulate')} ENE)`;
+                 ? `(${tr("blocked")})`
+                 : `(-${getActionCost('echo')} ${tr("energy-unit")})`;
+              document.getElementById('emergency-cost').innerText = `(-${getActionCost('emergency')} ${tr("energy-unit")}${getOxygenPenaltyText('emergency')})`;
+              document.getElementById('explore-cost').innerText = `(-${getActionCost('explore')} ${tr("energy-unit")}${getOxygenPenaltyText('explore')})`;
+              document.getElementById('records-cost').innerText = `(-${getActionCost('records')} ${tr("energy-unit")})`;
+              document.getElementById('observe-cost').innerText = `(-${getActionCost('observe')} ${tr("energy-unit")})`;
+              document.getElementById('inspect-cost').innerText = `(-${getActionCost('inspect')} ${tr("energy-unit")})`;
+              document.getElementById('manipulate-cost').innerText = `(-${getActionCost('manipulate')} ${tr("energy-unit")})`;
             document.getElementById('forecast').innerText =
-                 `SIN ACCIÓN HOY: Oxígeno -${perceivedPressure} · Cordura -${getDailyPressure()} · Evento mañana: ${Math.round(getEventChance(state.day + 1) * 100)}% · Energía siguiente: ${getNextDayEnergy()}/${energyCapacity} · Inestabilidad: ${state.stationStress}/4`;
+                 `${tr("forecast")}: ${tr("forecast-oxygen")} -${perceivedPressure} · ${tr("forecast-sanity")} -${getDailyPressure()} · ${tr("forecast-tomorrow")}: ${Math.round(getEventChance(state.day + 1) * 100)}% · ${tr("forecast-energy")}: ${getNextDayEnergy()}/${energyCapacity} · ${tr("forecast-stress")}: ${state.stationStress}/4`;
 
             const actionButtons = document.querySelectorAll('#game-ui button[onclick^="performAction"]');
             actionButtons.forEach(button => {
@@ -3085,7 +3596,7 @@
                 container.style.borderColor = ending.color;
                 container.style.boxShadow = `0 0 35px ${ending.color}`;
                 modal.style.background = `radial-gradient(circle at center, ${ending.glow}, rgba(0, 0, 0, 0.98) 72%)`;
-                restart.innerText = "VOLVER A EMPEZAR";
+                 restart.innerText = tr("restart-win");
                 body.innerText = text;
             } else {
                  title.innerText = death.title;
@@ -3101,7 +3612,7 @@
                  container.style.borderColor = death.color;
                  container.style.boxShadow = `0 0 35px ${death.color}`;
                  modal.style.background = `radial-gradient(circle at center, ${death.glow}, rgba(0, 0, 0, 0.98) 72%)`;
-                restart.innerText = "REINICIAR ERROR";
+                 restart.innerText = tr("restart-death");
                  body.innerText = death.text;
             }
         }
@@ -3138,7 +3649,8 @@
             }
         });
 
-        checkSavedGame();
+         applyLanguage();
+         checkSavedGame();
     </script>
 </body>
 </html>
