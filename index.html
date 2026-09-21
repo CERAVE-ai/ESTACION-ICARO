@@ -1583,7 +1583,11 @@
                       "CONSULT CHART · reveal a safe route",
                   "UTILIDAD DE OBJETOS": "ITEM UTILITY",
                   "No tienes objetos activables. Algunos se usan automáticamente en zonas concretas.":
-                      "You have no usable items. Some are used automatically in specific zones."
+                       "You have no usable items. Some are used automatically in specific zones.",
+                   "Esta vez no has reparado el oxígeno. ¿Estás intentando demostrarme algo?":
+                       "This time you haven't repaired the oxygen. Are you trying to prove something to me?",
+                   "Siempre reparas el oxígeno cuando estás preocupado.":
+                       "You always repair the oxygen when you're worried."
               },
               fr: {
                   "Ya hemos hecho esto antes. Contando esta, van {count} veces.": "Nous l'avons déjà fait. En comptant cela, ils font {count} fois.",
@@ -2037,7 +2041,9 @@
                   "FUNDIR METAL VIVO · reparar integridad con riesgo": "FUSION DU MÉTAL VIVANT · réparer l'intégrité avec risque",
                   "CONSULTAR CÉDULA · revelar una ruta segura": "CONSULTER LA CARTE · révéler un itinéraire sécurisé",
                   "UTILIDAD DE OBJETOS": "UTILITAIRE OBJET",
-                  "No tienes objetos activables. Algunos se usan automáticamente en zonas concretas.": "Vous n'avez aucun objet activable. Certains sont utilisés automatiquement dans des domaines spécifiques."
+                   "No tienes objetos activables. Algunos se usan automáticamente en zonas concretas.": "Vous n'avez aucun objet activable. Certains sont utilisés automatiquement dans des domaines spécifiques.",
+                   "Esta vez no has reparado el oxígeno. ¿Estás intentando demostrarme algo?": "Cette fois, tu n'as pas réparé l'oxygène. Tu essaies de me prouver quelque chose ?",
+                   "Siempre reparas el oxígeno cuando estás preocupado.": "Tu répares toujours l'oxygène quand tu es inquiet."
               },
               it: {
                   "Ya hemos hecho esto antes. Contando esta, van {count} veces.": "Lo abbiamo già fatto prima. Contando questo, fanno {count} volte.",
@@ -2491,7 +2497,9 @@
                   "FUNDIR METAL VIVO · reparar integridad con riesgo": "FUSIONE DEL METALLO VIVO · Riparare l'integrità con rischi",
                   "CONSULTAR CÉDULA · revelar una ruta segura": "CONSULTA LA SCHEDA · individuare un percorso sicuro",
                   "UTILIDAD DE OBJETOS": "UTILITÀ DELL'OGGETTO",
-                  "No tienes objetos activables. Algunos se usan automáticamente en zonas concretas.": "Non hai oggetti attivabili. Alcuni vengono utilizzati automaticamente in aree specifiche."
+                   "No tienes objetos activables. Algunos se usan automáticamente en zonas concretas.": "Non hai oggetti attivabili. Alcuni vengono utilizzati automaticamente in aree specifiche.",
+                   "Esta vez no has reparado el oxígeno. ¿Estás intentando demostrarme algo?": "Questa volta non hai riparato l'ossigeno. Stai cercando di dimostrarmi qualcosa?",
+                   "Siempre reparas el oxígeno cuando estás preocupado.": "Ripari sempre l'ossigeno quando sei preoccupato."
               },
               de: {
                   "Ya hemos hecho esto antes. Contando esta, van {count} veces.": "Wir haben das schon einmal gemacht. Wenn man dies mitzählt, kommen sie {count} Mal.",
@@ -2945,7 +2953,9 @@
                   "FUNDIR METAL VIVO · reparar integridad con riesgo": "SCHMELZEN VON LEBENDEM METALL · Reparieren Sie die Integrität unter Risiko",
                   "CONSULTAR CÉDULA · revelar una ruta segura": "CONSULT CARD · Zeigen Sie einen sicheren Weg auf",
                   "UTILIDAD DE OBJETOS": "OBJEKTNUTZUNG",
-                  "No tienes objetos activables. Algunos se usan automáticamente en zonas concretas.": "Sie haben keine aktivierbaren Objekte. Einige werden automatisch in bestimmten Bereichen verwendet."
+                   "No tienes objetos activables. Algunos se usan automáticamente en zonas concretas.": "Sie haben keine aktivierbaren Objekte. Einige werden automatisch in bestimmten Bereichen verwendet.",
+                   "Esta vez no has reparado el oxígeno. ¿Estás intentando demostrarme algo?": "Diesmal hast du den Sauerstoff nicht repariert. Versuchst du, mir etwas zu beweisen?",
+                   "Siempre reparas el oxígeno cuando estás preocupado.": "Du reparierst den Sauerstoff immer, wenn du besorgt bist."
               },
           };
 
@@ -3430,6 +3440,7 @@
              rareEventsSeen: [],
               criticalOxygenEventsSeen: [],
              decisions: [],
+             runActionCounts: {},
              observatoryVisits: [],
              observatoryFindings: [],
              observatorySpecialSeen: false,
@@ -3471,7 +3482,12 @@
                  endings: [],
                  secrets: [],
                   deathMessagesSeen: [],
-                 customModesUnlocked: false
+                  customModesUnlocked: false,
+                  echoMemory: {
+                      runs: 0,
+                      actionTotals: {},
+                      recentRuns: []
+                  }
              };
              try {
                  const saved = JSON.parse(localStorage.getItem(PROFILE_KEY) || "null");
@@ -3482,7 +3498,18 @@
                       secrets: Array.isArray(saved?.secrets) ? saved.secrets : [],
                       deathMessagesSeen: Array.isArray(saved?.deathMessagesSeen)
                           ? saved.deathMessagesSeen
-                          : []
+                           : [],
+                      echoMemory: {
+                          ...defaults.echoMemory,
+                          ...(saved?.echoMemory || {}),
+                          actionTotals: {
+                              ...defaults.echoMemory.actionTotals,
+                              ...(saved?.echoMemory?.actionTotals || {})
+                          },
+                          recentRuns: Array.isArray(saved?.echoMemory?.recentRuns)
+                              ? saved.echoMemory.recentRuns.slice(-5)
+                              : []
+                      }
                  };
              } catch {
                  return defaults;
@@ -3492,6 +3519,30 @@
          function saveMetaProgress() {
              localStorage.setItem(PROFILE_KEY, JSON.stringify(metaProgress));
          }
+
+          function recordEchoRunMemory(outcome) {
+              const memory = metaProgress.echoMemory || {
+                  runs: 0,
+                  actionTotals: {},
+                  recentRuns: []
+              };
+              const runActions = { ...(state.runActionCounts || {}) };
+              memory.runs = (Number(memory.runs) || 0) + 1;
+              memory.actionTotals = memory.actionTotals || {};
+              Object.entries(runActions).forEach(([action, count]) => {
+                  memory.actionTotals[action] =
+                      (Number(memory.actionTotals[action]) || 0) + (Number(count) || 0);
+              });
+              memory.recentRuns = [
+                  ...(Array.isArray(memory.recentRuns) ? memory.recentRuns : []),
+                  {
+                      actions: runActions,
+                      day: state.day,
+                      outcome
+                  }
+              ].slice(-5);
+              metaProgress.echoMemory = memory;
+          }
 
           function updateRunCycleIndicator() {
               const indicator = document.getElementById('run-cycle');
@@ -3539,6 +3590,7 @@
          }
 
          function registerRunResult(win) {
+              recordEchoRunMemory(win ? "victory" : "death");
              metaProgress.secrets = Array.from(new Set([
                  ...metaProgress.secrets,
                  ...(state.secrets || [])
@@ -4548,6 +4600,9 @@
                   ? state.criticalOxygenEventsSeen
                   : [];
              state.decisions = Array.isArray(state.decisions) ? state.decisions : [];
+              state.runActionCounts = state.runActionCounts && typeof state.runActionCounts === "object"
+                  ? state.runActionCounts
+                  : {};
              state.observatoryVisits = Array.isArray(state.observatoryVisits) ? state.observatoryVisits : [];
              state.observatoryFindings = Array.isArray(state.observatoryFindings) ? state.observatoryFindings : [];
              state.observatorySpecialSeen = Boolean(state.observatorySpecialSeen);
@@ -4764,6 +4819,11 @@
                  label,
                  day: state.day
              });
+              const actionMatch = /^action:(.+)$/.exec(id);
+              if (actionMatch) {
+                  const action = actionMatch[1];
+                  state.runActionCounts[action] = (Number(state.runActionCounts[action]) || 0) + 1;
+              }
              // ECHO recuerda patrones, no necesita conservar cada clic de toda la partida.
              while (state.decisions.length > 40) state.decisions.shift();
          }
@@ -4776,8 +4836,28 @@
              return state.decisions.some(decision => decision.id === id);
          }
 
+          function getCrossRunEchoMemoryMessage() {
+              const memory = metaProgress.echoMemory;
+              if (!memory || Number(memory.runs) < 2 || state.day < 7) return null;
+
+              const totalRepairs = Number(memory.actionTotals?.repair) || 0;
+              const currentRepairs = Number(state.runActionCounts?.repair) || 0;
+              const previousRuns = Number(memory.runs) || 0;
+              const repairHabit = totalRepairs >= previousRuns * 2;
+
+              if (repairHabit && currentRepairs === 0) {
+                  return "Esta vez no has reparado el oxígeno. ¿Estás intentando demostrarme algo?";
+              }
+              if (repairHabit && currentRepairs >= 2) {
+                  return "Siempre reparas el oxígeno cuando estás preocupado.";
+              }
+              return null;
+          }
+
          function getEchoMemoryMessage() {
-             if (!state.decisions.length || state.day < 7) return null;
+              const crossRunMessage = getCrossRunEchoMemoryMessage();
+              if (crossRunMessage) return crossRunMessage;
+              if (!state.decisions.length || state.day < 7) return null;
 
              if (hasDecision("event:corrosion:ration")) {
                  return "La otra vez elegiste racionar el aire en lugar de parchear la brecha. Siempre eliges conservar oxígeno. Quizá por eso te cuesta tanto escucharme.";
