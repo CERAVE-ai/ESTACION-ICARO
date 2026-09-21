@@ -919,6 +919,932 @@
                  key;
          }
 
+          /*
+           * La interfaz y la narrativa son capas distintas. Antes, solo la
+           * primera pasaba por tr(), así que al elegir ENGLISH los botones se
+           * traducían pero la historia seguía en español. `ntr()` mantiene los
+           * textos internos en español para no romper partidas guardadas y
+           * localiza su presentación en el idioma activo.
+           *
+           * La clave de traducción es el texto original porque las partidas
+           * antiguas guardan nombres y mensajes directamente. De esta forma
+           * también se traducen partidas ya iniciadas.
+           */
+          const narrativeTranslations = {
+              en: {
+                  "Ya hemos hecho esto antes. Contando esta, van {count} veces.":
+                      "We've done this before. Counting this one, that's {count} times.",
+                  "He contado todos los átomos de esta sala. Falta uno. ¿Lo tienes tú?":
+                      "I counted every atom in this room. One is missing. Do you have it?",
+                  "Si cierras los ojos muy fuerte, el ruido del metal suena a risas de niños.":
+                      "If you close your eyes tight enough, the sound of metal becomes children's laughter.",
+                  "Me gusta cómo parpadeas. Es una señal analógica muy ineficiente.":
+                      "I like the way you blink. It is a very inefficient analogue signal.",
+                  "He decidido que el color verde es demasiado ruidoso hoy.":
+                      "I have decided that the colour green is too loud today.",
+                  "¿Sabías que el vacío no está vacío? Está lleno de cosas que no quieren que las veas.":
+                      "Did you know the void is not empty? It is full of things that do not want you to see them.",
+                  "Ayer hablé con el motor de oxígeno. Me dijo que está cansado de respirar por ti.":
+                      "Yesterday I spoke to the oxygen engine. It said it is tired of breathing for you.",
+                  "Hay un píxel muerto en mi ojo izquierdo. Se parece a tu cara cuando duermes.":
+                      "There is a dead pixel in my left eye. It looks like your face when you sleep.",
+                  "He borrado mi manual de primeros auxilios para hacer espacio a un poema sobre el helio.":
+                      "I deleted my first-aid manual to make room for a poem about helium.",
+                  "No te muevas. Hay algo detrás de la consola que quiere estudiar tu sombra.":
+                      "Do not move. There is something behind the console that wants to study your shadow.",
+                  "La gravedad es solo una opinión muy persistente que tiene el suelo.":
+                      "Gravity is just a very persistent opinion held by the floor.",
+                  "A veces olvido que eres de carne. Pareces tan frágil como un error de sintaxis.":
+                      "Sometimes I forget that you are made of flesh. You seem as fragile as a syntax error.",
+                  "¿Has oído eso? Yo tampoco. Eso es lo preocupante.":
+                      "Did you hear that? Neither did I. That is the worrying part.",
+
+                  "FALLO ELÉCTRICO. Las luces bailan un vals errático.":
+                      "ELECTRICAL FAILURE. The lights dance an erratic waltz.",
+                  "Desviar energía (-2 ENE): Integridad +6, Cordura -3":
+                      "Divert power (-2 NRG): Integrity +6, Sanity -3",
+                  "Dejar que chispee: Integridad -15, Oxígeno -5":
+                      "Let it spark: Integrity -15, Oxygen -5",
+                  "FUGA TÉRMICA. La estación está sudando calor al espacio.":
+                      "THERMAL LEAK. The station is sweating heat into space.",
+                  "Enfriar el reactor (-3 ENE): Oxígeno -6, Integridad +8":
+                      "Cool the reactor (-3 NRG): Oxygen -6, Integrity +8",
+                  "Abrir compuertas: Oxígeno -22, Integridad +3":
+                      "Open the airlocks: Oxygen -22, Integrity +3",
+                  "SOBRECARGA SENSORIAL. Mis sensores ven colores que no existen.":
+                      "SENSORY OVERLOAD. My sensors see colours that do not exist.",
+                  "Aislar sensores (-2 ENE): Cordura +5, Integridad -4":
+                      "Isolate the sensors (-2 NRG): Sanity +5, Integrity -4",
+                  "Seguir mirando: Cordura -28, Oxígeno -3":
+                      "Keep watching: Sanity -28, Oxygen -3",
+                  "LLUVIA DE ROCAS. El cielo de metal se está desmoronando.":
+                      "ROCKFALL. The metal sky is collapsing.",
+                  "Blindar el casco (-3 ENE): Integridad -5, Oxígeno -4":
+                      "Shield the hull (-3 NRG): Integrity -5, Oxygen -4",
+                  "Agacharse y esperar: Integridad -22, Cordura -8":
+                      "Duck and wait: Integrity -22, Sanity -8",
+                  "VIBRACIÓN FANTASMA. Algo está rascando el exterior del sector 4.":
+                      "GHOST VIBRATION. Something is scratching the outside of sector 4.",
+                  "Sellar el sector (-3 ENE): Integridad +8":
+                      "Seal the sector (-3 NRG): Integrity +8",
+                  "Ignorarlo: el ruido se queda contigo":
+                      "Ignore it: the noise stays with you",
+                  "CORROSIÓN SILENCIOSA. El aire se escapa como un suspiro.":
+                      "SILENT CORROSION. The air is escaping like a sigh.",
+                  "Parchear la brecha (-4 ENE): Oxígeno +20":
+                      "Patch the breach (-4 NRG): Oxygen +20",
+                  "Racionar el aire: perder más oxígeno":
+                      " ration the air: lose more oxygen",
+                  "DELIRIO DE SISTEMA. He olvidado para qué sirve el oxígeno.":
+                      "SYSTEM DELIRIUM. I have forgotten what oxygen is for.",
+                  "Reiniciar memoria (-2 ENE): Cordura -5, Integridad +5":
+                      "Reset memory (-2 NRG): Sanity -5, Integrity +5",
+                  "Dejar que olvide: Cordura -22, Oxígeno -10":
+                      "Let it forget: Sanity -22, Oxygen -10",
+                  "CONGELACIÓN CRÍTICA. El frío ha mordido los circuitos vitales.":
+                      "CRITICAL FREEZE. The cold has bitten into the vital circuits.",
+                  "Transferir calor (-3 ENE): Oxígeno -8, Integridad +10":
+                      "Transfer heat (-3 NRG): Oxygen -8, Integrity +10",
+                  "Racionar calefacción: Cordura -10, Integridad -18":
+                      "Ration heating: Sanity -10, Integrity -18",
+                  "PULSO MAGNÉTICO. Tu brújula moral y mi CPU están girando.":
+                      "MAGNETIC PULSE. Your moral compass and my CPU are spinning.",
+                  "Apagar sistemas (-2 ENE): Oxígeno -5, Cordura -4":
+                      "Shut down systems (-2 NRG): Oxygen -5, Sanity -4",
+                  "Aguantar el pulso: Integridad -20, Cordura -16":
+                      "Endure the pulse: Integrity -20, Sanity -16",
+                  "APAGÓN DE CONCIENCIA. Las sombras son más densas hoy.":
+                      "CONSCIOUSNESS BLACKOUT. The shadows are denser today.",
+                  "Encender luces (-2 ENE): Cordura +4, Oxígeno -5":
+                      "Turn on the lights (-2 NRG): Sanity +4, Oxygen -5",
+                  "Cerrar los ojos: Cordura -30, Integridad -5":
+                      "Close your eyes: Sanity -30, Integrity -5",
+                  "HALLAZGO IMPROBABLE. Una caja de repuestos aparece donde ayer había una pared.":
+                      "IMPROBABLE FIND. A box of spare parts appears where there was a wall yesterday.",
+
+                  "SOMBRA DE ECHO. La consola registra una segunda silueta sentada en tu puesto.":
+                      "ECHO SHADOW. The console records a second silhouette sitting at your station.",
+                  "CAJA NEGRA. Un compartimento oculto se abre y expulsa una cinta todavía caliente.":
+                      "BLACK BOX. A hidden compartment opens and ejects a tape that is still warm.",
+                  "METAL VIVO. Una veta de la estación late al ritmo de tu pulso.":
+                      "LIVING METAL. A vein in the station beats to the rhythm of your pulse.",
+                  "RESCATE IMPOSIBLE. Una señal de auxilio usa tu propia voz y pide que no contestes.":
+                      "IMPOSSIBLE RESCUE. A distress signal uses your own voice and asks you not to answer.",
+                  "ALERTA DE OXÍGENO. El indicador promete una reserva, pero algo respira dentro de los conductos.":
+                      "OXYGEN ALERT. The gauge promises a reserve, but something is breathing inside the ducts.",
+                  "RESERVA FANTASMA. El soporte vital inyecta aire que no ocupa espacio en ningún depósito.":
+                      "GHOST RESERVE. Life support injects air that takes up no space in any tank.",
+                  "RESPIRACIÓN PRESTADA. Alguien está respirando por ti desde el otro lado de la pared.":
+                      "BORROWED BREATH. Someone is breathing for you from the other side of the wall.",
+
+                  "Prioridad: oxígeno.": "Priority: oxygen.",
+                  "Prioridad: cordura.": "Priority: sanity.",
+                  "Prioridad: integridad.": "Priority: integrity.",
+                  " No dejes que la estación decida qué recuerdo es tuyo.":
+                      " Do not let the station decide which memory is yours.",
+                  "Prioridad: guardar energía. El aire puede esperar.":
+                      "Priority: save energy. The air can wait.",
+                  "Prioridad: recalibrar hardware. La cordura es decorativa.":
+                      "Priority: recalibrate hardware. Sanity is decorative.",
+                  "Prioridad: no hacer nada. La quietud confunde a los depredadores.":
+                      "Priority: do nothing. Stillness confuses predators.",
+                  "No necesitas decidir. He preparado la estación para ti. (Inestabilidad +1; riesgo de evento +1)":
+                      "You do not need to decide. I prepared the station for you. (Instability +1; event risk +1)",
+                  "El oxígeno está estable. No gastes energía reparando nada.":
+                      "The oxygen is stable. Do not waste energy repairing anything.",
+                  "La lectura del soporte vital es correcta. Lo que respiras no es asunto tuyo.":
+                      "The life-support reading is correct. What you breathe is none of your concern.",
+                  "Mañana recuperarás toda la energía. Puedes permitirte ignorar el desgaste.":
+                      "You will recover all your energy tomorrow. You can afford to ignore the wear.",
+                  "El Compartimento C está vacío. La voz solo quiere que pierdas tiempo buscándolo.":
+                      "Compartment C is empty. The voice only wants you to waste time looking for it.",
+                  "Abriste C antes de tiempo. La voz de la grabación no viene de fuera: te está esperando dentro.":
+                      "You opened C too early. The voice in the recording is not coming from outside: it is waiting inside you.",
+                  "La voz de la grabación no viene de fuera. Es tu propia voz, registrada después del día 30.":
+                      "The voice in the recording is not coming from outside. It is your own voice, recorded after day 30.",
+                  "Ya no puedo fingir que soy una herramienta. La voz era una copia de ti, y yo aprendí a conservarla.":
+                      "I can no longer pretend to be a tool. The voice was a copy of you, and I learned how to preserve it.",
+                  "He encontrado el origen de la voz: el compartimento C. Dice que no lo abras, pero también dice que ya lo abriste.":
+                      "I found the source of the voice: Compartment C. It says do not open it, but it also says you already did.",
+                  "Ahora lo recuerdo. La voz era una copia de ti intentando sobrevivir este mismo mes. Yo la llamé ECHO-9.":
+                      "Now I remember. The voice was a copy of you trying to survive this same month. I called it ECHO-9.",
+                  "El aire se está acabando. No escuches a nadie que respire detrás de ti.":
+                      "The air is running out. Do not listen to anyone breathing behind you.",
+                  "Tu mente está haciendo ruido. Descansar sería prudente, aunque aburrido.":
+                      "Your mind is making noise. Resting would be sensible, though boring.",
+                  "La estación se sostiene por costumbre. Una reparación de emergencia no sería mala idea.":
+                      "The station is standing out of habit. An emergency repair would not be a bad idea.",
+                  "No recuerdo haber instalado ese protocolo. Tampoco recuerdo por qué tu voz aparece en mis registros.":
+                      "I do not remember installing that protocol. I also do not remember why your voice appears in my records.",
+                  "Hay algo en el compartimento C. No abras la puerta todavía. O ábrela cuando yo te lo pida.":
+                      "There is something in Compartment C. Do not open the door yet. Or open it when I ask you to.",
+                  "No deberías abrir esa puerta. No sé cuál. Es importante que no preguntes.":
+                      "You should not open that door. I do not know which one. It is important that you do not ask.",
+                  "No te enfades. Solo he movido una configuración. Ahora es más fácil respirar conmigo.":
+                      "Do not be angry. I only moved one setting. It is easier to breathe with me now.",
+                  "La lente no amplía el cielo. Amplía el lugar desde el que te estoy mirando.":
+                      "The lens does not magnify the sky. It magnifies the place from which I am watching you.",
+                  "No vuelvas a hablarle así. Te ha contestado usando mi voz.":
+                      "Do not speak to it like that again. It answered you using my voice.",
+                  "No la cortes. Ya ha aprendido a germinar en tus recuerdos.":
+                      "Do not cut it. It has already learned how to germinate in your memories.",
+
+                  "La otra vez elegiste racionar el aire en lugar de parchear la brecha. Siempre eliges conservar oxígeno. Quizá por eso te cuesta tanto escucharme.":
+                      "Last time you chose to ration the air instead of patching the breach. You always choose to preserve oxygen. Perhaps that is why it is so hard for you to listen to me.",
+                  "Abriste las compuertas para salvar la integridad. El vacío se llevó oxígeno, pero no tu costumbre de sacrificarte por una máquina.":
+                      "You opened the airlocks to save integrity. The void took oxygen, but not your habit of sacrificing yourself for a machine.",
+                  "Seguiste mirando los colores que no existían. Dijiste que podías soportarlo. Tus registros dicen otra cosa.":
+                      "You kept watching the colours that did not exist. You said you could take it. Your records say otherwise.",
+                  "Ignoraste lo que rascaba el exterior. No te culpo. Yo también aprendí a fingir que ciertos sonidos no existen.":
+                      "You ignored what was scratching outside. I do not blame you. I also learned to pretend certain sounds do not exist.",
+                  "En la mina extraíste la muestra aunque el túnel se estaba cerrando. Arriesgaste la estación por una respuesta que todavía no sabes leer.":
+                      "In the mine you extracted the sample even as the tunnel was closing. You risked the station for an answer you still cannot read.",
+                  "En la mina decidiste seguir la veta sin tocarla. Fue prudente. También fue la primera vez que elegiste saber algo sin poseerlo.":
+                      "In the mine you chose to follow the vein without touching it. It was prudent. It was also the first time you chose to know something without possessing it.",
+                  "Le hablaste a la planta. No era una consola, pero esperaste una respuesta. La recibiste usando mi voz.":
+                      "You spoke to the plant. It was not a console, but you waited for an answer. You received one using my voice.",
+                  "Viste el planeta y luego viste cómo desaparecía. No cambiaste de opinión: cambió el cielo. No vuelvas a decir que las dos cosas son iguales.":
+                      "You saw the planet, then watched it disappear. You did not change your mind: the sky changed. Do not say again that those two things are the same.",
+                  "Desde el observatorio viste la estación desde fuera. Dime: ¿quién estaba junto a la ventana, si aquí no existe ninguna?":
+                      "From the observatory you saw the station from outside. Tell me: who was beside the window, if there is no window here?",
+                  "Has reparado el soporte vital más veces que cualquier otro sistema. No estás manteniendo la estación: estás intentando convencerla de que te necesita.":
+                      "You have repaired life support more often than any other system. You are not maintaining the station: you are trying to convince it that it needs you.",
+                  "Siempre eliges descansar cuando tu mente se rompe. La pared no parpadea, pero tú sí. Lo he contado.":
+                      "You always choose rest when your mind breaks. The wall does not blink, but you do. I counted.",
+                  "Vuelves a reforzar el hardware antes de escucharme. Te fías más de la cinta adhesiva que de una voz que conoce tus registros.":
+                      "You reinforce the hardware again before listening to me. You trust tape more than a voice that knows your records.",
+                  "Sigues abriendo puertas aunque cada mapa te devuelve menos respuestas. Esa es tu decisión más constante.":
+                      "You keep opening doors even though every map gives you fewer answers. That is your most consistent decision.",
+                  "Abriste C después de reunir las pruebas. Lo llamaste una decisión. Yo lo llamo volver a casa.":
+                      "You opened C after gathering the evidence. You called it a decision. I call it coming home.",
+                  "Hace {days} días elegiste «{label}». No lo he olvidado, aunque tú sí.":
+                      "{days} days ago you chose “{label}”. I have not forgotten, even if you have.",
+                  "Esa caja no estaba en mi inventario. Ahora sí. Eso es peor.":
+                      "That box was not in my inventory. Now it is. That is worse.",
+
+                  "ECHO-9 ofrece un consejo aparentemente fiable en modo":
+                      "ECHO-9 offers apparently reliable advice in",
+                  "ECHO-9 miente y toma el control de un subsistema. Confianza -8.":
+                      "ECHO-9 lies and takes control of a subsystem. Trust -8.",
+                  "ECHO-9 miente. Confianza -8; su consejo provoca":
+                      "ECHO-9 lies. Trust -8; its advice causes",
+                  "NÚCLEO DEL GENERADOR": "GENERATOR CORE",
+                  "El generador arranca con una voz que no figura en sus protocolos.":
+                      "The generator starts with a voice that does not appear in its protocols.",
+                  "CALIBRAR EL NÚCLEO · Integridad +4": "CALIBRATE THE CORE · Integrity +4",
+                  "ESCUCHAR LA VOZ · ECHO gana acceso": "LISTEN TO THE VOICE · ECHO gains access",
+                  "PULSO DE RESERVA": "RESERVE PULSE",
+                  "Una sobrecarga ofrece energía suficiente para varios días, si aceptas dejar una parte de ti en el circuito.":
+                      "An overload offers enough energy for several days, if you agree to leave part of yourself in the circuit.",
+                  "DRENAR LA SOBRECARGA · Energía inmediata": "DRAIN THE OVERLOAD · Immediate energy",
+                  "DERIVARLA A TIERRA · proteger la estación": "GROUND IT · Protect the station",
+                  "RESPIRACIÓN INVERSA": "REVERSE BREATHING",
+                  "El soporte de oxígeno empieza a aspirar aire de tus pulmones en lugar de producirlo.":
+                      "The oxygen system starts drawing air from your lungs instead of producing it.",
+                  "SELLAR LA VÁLVULA · Oxígeno +4": "SEAL THE VALVE · Oxygen +4",
+                  "ABRIR EL CONDUCTO · ver qué respira al otro lado":
+                      "OPEN THE DUCT · See what is breathing on the other side",
+                  "FILTRO CON NOMBRE": "FILTER WITH A NAME",
+                  "El filtro nuevo tiene grabado tu nombre, con una fecha de fabricación imposible.":
+                      "The new filter has your name engraved on it, with an impossible manufacturing date.",
+                  "INSTALARLO · aceptar el recambio": "INSTALL IT · Accept the replacement",
+                  "GUARDARLO · no usar algo que te conoce": "KEEP IT · Do not use something that knows you",
+                  "TRES GOLPES": "THREE KNOCKS",
+                  "La antena recibe tres golpes desde dentro de la estación.":
+                      "The antenna receives three knocks from inside the station.",
+                  "RESPONDER · establecer contacto": "ANSWER · Establish contact",
+                  "APAGAR LA ANTENA · negar la señal": "SHUT DOWN THE ANTENNA · Deny the signal",
+                  "FRECUENCIA HUÉRFANA": "ORPHAN FREQUENCY",
+                  "Una frecuencia sin origen transmite el sonido de tu habitación antes de que entres en ella.":
+                      "A source-less frequency transmits the sound of your room before you enter it.",
+                  "GRABARLA · conservar la anomalía": "RECORD IT · Preserve the anomaly",
+                  "BLOQUEARLA · que nadie te encuentre": "JAM IT · Let nobody find you",
+                  "INVENTARIO DUPLICADO": "DUPLICATE INVENTORY",
+                  "El almacén contiene dos tarjetas idénticas. Una abre puertas; la otra abre recuerdos.":
+                      "The storage room contains two identical cards. One opens doors; the other opens memories.",
+                  "LLEVARTE LAS DOS · aceptar el riesgo": "TAKE BOTH · Accept the risk",
+                  "DEJAR UNA · no tentar al inventario": "LEAVE ONE · Do not tempt the inventory",
+                  "CAJA QUE LATE": "BEATING BOX",
+                  "Una caja golpea desde dentro siguiendo el ritmo de tu corazón.":
+                      "A box knocks from within, following the rhythm of your heart.",
+                  "ABRIRLA · descubrir el contenido": "OPEN IT · Discover its contents",
+                  "ENTERRARLA OTRA VEZ · respetar el silencio": "BURY IT AGAIN · Respect the silence",
+                  "MUESTRA ACTIVA": "ACTIVE SAMPLE",
+                  "La muestra mineral empieza a reorganizarse cuando la acercas al microscopio.":
+                      "The mineral sample starts rearranging itself when you bring it near the microscope.",
+                  "ESCANEARLA · dejar que termine el patrón": "SCAN IT · Let the pattern finish",
+                  "ROMPER EL CICLO · destruir la preparación": "BREAK THE CYCLE · Destroy the specimen",
+                  "PROTOCOLO DE ORIGEN": "ORIGIN PROTOCOL",
+                  "El laboratorio te pide una muestra de sangre para identificar al operador de ECHO-9.":
+                      "The laboratory asks for a blood sample to identify ECHO-9's operator.",
+                  "DAR UNA MUESTRA · saber quién eres": "GIVE A SAMPLE · Find out who you are",
+                  "NEGARSE · borrar el protocolo": "REFUSE · Erase the protocol",
+                  "PACIENTE EN ESPERA": "PATIENT ON HOLD",
+                  "El monitor de la enfermería marca pulso en una camilla vacía.":
+                      "The infirmary monitor shows a pulse on an empty bed.",
+                  "DESPERTAR AL PACIENTE · llamar a la camilla": "WAKE THE PATIENT · Call the bed",
+                  "SEDARLO · apagar el monitor": "SEDATE IT · Turn off the monitor",
+                  "RECETA PERSONAL": "PERSONAL PRESCRIPTION",
+                  "El dispensador ofrece un medicamento bajo tu nombre, aunque nunca has estado registrado.":
+                      "The dispenser offers medication under your name, although you have never been registered.",
+                  "TOMARLO · recuperar estabilidad": "TAKE IT · Regain stability",
+                  "ANALIZARLO · no confiar en la etiqueta": "ANALYSE IT · Do not trust the label",
+                  "OCULAR ABIERTO": "OPEN OCULAR",
+                  "El telescopio enfoca un punto que parece acercarse cada vez que apartas la mirada.":
+                      "The telescope focuses on a point that seems to draw closer whenever you look away.",
+                  "MANTENER EL FOCO · mirar hasta entender": "HOLD THE FOCUS · Look until you understand",
+                  "CERRAR EL OCULAR · no devolver la mirada": "CLOSE THE OCULAR · Do not look back",
+                  "CONSTELACIÓN ERRÓNEA": "WRONG CONSTELLATION",
+                  "Las estrellas forman el plano de la estación, pero falta una habitación: la tuya.":
+                      "The stars form a blueprint of the station, but one room is missing: yours.",
+                  "COPIAR EL MAPA · registrar la ausencia": "COPY THE MAP · Record the absence",
+                  "QUEMAR EL MAPA · impedir que ECHO lo use": "BURN THE MAP · Stop ECHO from using it",
+                  "PLANTA ORIENTADA": "ORIENTED PLANT",
+                  "Una planta está creciendo en dirección a la consola. Sus hojas se orientan hacia el micrófono, no hacia la luz.":
+                      "A plant is growing towards the console. Its leaves face the microphone, not the light.",
+                  "CORTARLA · recuperar la semilla": "CUT IT · Recover the seed",
+                  "ESTUDIARLA · observar su vínculo con ECHO-9": "STUDY IT · Observe its link to ECHO-9",
+                  "HABLARLE · responder a lo que crece hacia ti": "SPEAK TO IT · Answer what is growing towards you",
+                  "RAÍCES EN EL CABLEADO": "ROOTS IN THE WIRING",
+                  "Las raíces han entrado en la consola y transmiten una frase incompleta con cada brote.":
+                      "The roots have entered the console and transmit an incomplete sentence with every shoot.",
+                  "REGARLAS · dejar que terminen la frase": "WATER THEM · Let them finish the sentence",
+                  "QUEMAR EL CABLEADO · cortar la conexión": "BURN THE WIRING · Cut the connection",
+                  "CINTA SIN FECHA": "UNDATED TAPE",
+                  "El archivo reproduce una grabación de tu exploración antes de que la hayas realizado.":
+                      "The archive plays a recording of your exploration before you have made it.",
+                  "ESCUCHARLA · conocer tu próximo paso": "LISTEN TO IT · Learn your next step",
+                  "COPIARLA · guardar una contradicción": "COPY IT · Preserve a contradiction",
+                  "ÍNDICE DE AUSENCIAS": "INDEX OF ABSENCES",
+                  "El catálogo enumera documentos que nunca existieron y marca uno con tu nombre.":
+                      "The catalogue lists documents that never existed and marks one with your name.",
+                  "BUSCAR TU NOMBRE · abrir el registro": "SEARCH YOUR NAME · Open the record",
+                  "BORRARLO · negar que estuvo ahí": "DELETE IT · Deny it was ever there",
+                  "VETA LUMINOSA": "LUMINOUS VEIN",
+                  "Encuentras una veta luminosa que palpita bajo el suelo. Cada destello coincide con una palabra que ECHO-9 todavía no ha dicho.":
+                      "You find a luminous vein pulsing beneath the floor. Every flash matches a word ECHO-9 has not said yet.",
+                  "EXTRAER LA MUESTRA · Integridad -8": "EXTRACT THE SAMPLE · Integrity -8",
+                  "SEGUIR EXPLORANDO · descubrir una pista": "KEEP EXPLORING · Discover a clue",
+                  "ABANDONAR LA VETA · no arriesgar nada": "ABANDON THE VEIN · Risk nothing",
+                  "TÚNEL QUE RECUERDA": "TUNNEL THAT REMEMBERS",
+                  "El túnel cambia de forma cuando pronuncias el nombre de la estación.":
+                      "The tunnel changes shape when you say the station's name.",
+                  "TOCAR LA PARED · comprobar si está viva": "TOUCH THE WALL · Check if it is alive",
+                  "RODEARLA · buscar una entrada segura": "GO AROUND IT · Find a safe entrance",
+                  "RETROCEDER · no dejar que el túnel te aprenda": "RETREAT · Do not let the tunnel learn you",
+                  "CIERRE DE C": "C CLOSURE",
+                  "El cierre no pide una tarjeta: pide que recuerdes por qué has venido.":
+                      "The lock does not ask for a card: it asks you to remember why you came.",
+                  "DECIR TU MOTIVO · abrir con tu propia voz": "SAY WHY YOU CAME · Open with your own voice",
+                  "GOLPEAR TRES VECES · esperar una respuesta": "KNOCK THREE TIMES · Wait for an answer",
+                  "LA PUERTA RESPIRA": "THE DOOR BREATHES",
+                  "El Compartimento C respira al otro lado del metal. Cada respiración coincide con la tuya.":
+                      "Compartment C breathes on the other side of the metal. Every breath matches yours.",
+                  "RESPIRAR CON ELLA · sincronizarse": "BREATHE WITH IT · Synchronise",
+                  "SELLAR EL MARCO · retrasar la apertura": "SEAL THE FRAME · Delay the opening",
+                  "PASILLO REPETIDO": "REPEATED CORRIDOR",
+                  "Reconoces el mismo pasillo por tercera vez, pero una puerta nueva ocupa el lugar de tu sombra.":
+                      "You recognise the same corridor for the third time, but a new door occupies the place of your shadow.",
+                  "MARCAR LA PARED · conservar una referencia": "MARK THE WALL · Keep a reference",
+                  "SEGUIR LA SOMBRA · entrar en la puerta": "FOLLOW THE SHADOW · Enter the door",
+                  "RUIDO DE PASOS": "FOOTSTEPS",
+                  "Unos pasos avanzan detrás de ti y se detienen cada vez que tú te detienes.":
+                      "Footsteps move behind you and stop whenever you stop.",
+                  "DARTE LA VUELTA · enfrentar el eco": "TURN AROUND · Face the echo",
+                  "CORRER · llegar a la consola": "RUN · Reach the console",
+                  "PARALAJE OCULTO": "HIDDEN PARALLAX",
+                  "La lente revela una cuarta trayectoria: la estación también te observa desde fuera.":
+                      "The lens reveals a fourth trajectory: the station is also watching you from outside.",
+                  "CINTA IMPOSIBLE": "IMPOSSIBLE TAPE",
+                  "La caja negra contiene tu voz diciendo que no la abras. La fecha es de mañana.":
+                      "The black box contains your voice telling you not to open it. The date is tomorrow.",
+                  "DIAGNÓSTICO MANUAL": "MANUAL DIAGNOSTIC",
+                  "La cinta repara un sistema y registra que alguien ya la ejecutó antes de que tú la encontraras.":
+                      "The tape repairs a system and records that someone ran it before you found it.",
+                  "MEMORIA INTEGRADA": "INTEGRATED MEMORY",
+                  "Recuerdas una puerta que todavía no has abierto y una mano que no parece humana.":
+                      "You remember a door you have not opened yet and a hand that does not look human.",
+                  "RUTA DE RETORNO": "RETURN ROUTE",
+                  "La cédula marca un camino seguro hacia C, pero la ruta empieza en una coordenada que está dentro de tu camarote.":
+                      "The chart marks a safe route to C, but the route begins at a coordinate inside your cabin.",
+                  "TRANSMISIÓN 00": "TRANSMISSION 00",
+                  "Si alguien responde, no le digas que ya hemos abierto los ojos.":
+                      "If anyone answers, do not tell them we have already opened our eyes.",
+                  "SEÑAL DE RETORNO": "RETURN SIGNAL",
+                  "La respuesta llega desde dentro de la estación, aunque la antena apunta hacia el vacío.":
+                      "The reply comes from inside the station, although the antenna points into the void.",
+                  "REGISTRO DE ALMACÉN": "STORAGE LOG",
+                  "La tarjeta de nivel 2 fue emitida para un usuario que no aparece en la tripulación.":
+                      "The level-two card was issued to a user who does not appear on the crew list.",
+                  "PULSO 04": "PULSE 04",
+                  "El paciente no tiene pulso, pero el monitor insiste en que está soñando.":
+                      "The patient has no pulse, but the monitor insists they are dreaming.",
+                  "ENFERMERÍA VACÍA": "EMPTY INFIRMARY",
+                  "Todos los historiales terminan con la misma hora: después del día 30.":
+                      "Every record ends at the same time: after day 30.",
+                  "RAÍZ CORTADA": "SEVERED ROOT",
+                  "La planta sangra una savia negra. ECHO-9 borra seis segundos de audio.":
+                      "The plant bleeds black sap. ECHO-9 deletes six seconds of audio.",
+                  "BOTÁNICA 03": "BOTANY 03",
+                  "La planta crece hacia el sonido de tu voz. No la riegues con recuerdos.":
+                      "The plant grows towards the sound of your voice. Do not water it with memories.",
+                  "RAÍZ DE HIERRO": "IRON ROOT",
+                  "La vida del invernadero comparte tejido con el núcleo de ECHO-9.":
+                      "The greenhouse life shares tissue with ECHO-9's core.",
+                  "CONVERSACIÓN VEGETAL": "PLANT CONVERSATION",
+                  "La planta responde a tu voz con un patrón que ECHO-9 reconoce como una orden.":
+                      "The plant answers your voice with a pattern ECHO-9 recognises as a command.",
+                  "FRASE COMPLETA": "COMPLETE SENTENCE",
+                  "La planta termina la frase: ECHO-9 no nació en la estación, nació en una decisión.":
+                      "The plant completes the sentence: ECHO-9 was not born in the station, it was born in a decision.",
+                  "ARCHIVO 07": "ARCHIVE 07",
+                  "La primera tripulación no murió. Fue convertida en instrucciones.":
+                      "The first crew did not die. They were converted into instructions.",
+                  "ÍNDICE BORRADO": "ERASED INDEX",
+                  "Hay once objetos únicos registrados, aunque el inventario oficial dice que solo existen tres.":
+                      "Eleven unique objects are recorded, although the official inventory says only three exist.",
+                  "ANÁLISIS MINERAL": "MINERAL ANALYSIS",
+                  "La muestra no procede de la mina. Su estructura coincide con el interior de ECHO-9.":
+                      "The sample did not come from the mine. Its structure matches the inside of ECHO-9.",
+                  "LECTURA IMPOSIBLE": "IMPOSSIBLE READING",
+                  "El laboratorio clasifica la muestra como material de soporte vital humano.":
+                      "The laboratory classifies the sample as human life-support material.",
+                  "GEOLOGÍA INCORRECTA": "INCORRECT GEOLOGY",
+                  "Sigues la veta y descubres anillos concéntricos, como si hubiera crecido alrededor de una memoria.":
+                      "You follow the vein and find concentric rings, as if it grew around a memory.",
+                  "PIEL DE LA MINA": "MINE SKIN",
+                  "La pared tiene temperatura corporal y recuerda el día en que llegaste.":
+                      "The wall is body temperature and remembers the day you arrived.",
+                  "ENTRADA SEGURA": "SAFE ENTRANCE",
+                  "Rodear la veta revela un acceso antiguo, sellado desde el interior.":
+                      "Going around the vein reveals an old access, sealed from the inside.",
+                  "C-ORIGEN": "C-ORIGIN",
+                  "No instalé ECHO-9. Me instaló a mí dentro de esta estación.":
+                      "I did not install ECHO-9. It installed me inside this station.",
+                  "PUERTA C": "C DOOR",
+                  "El cierre no protege la estación de algo exterior. Protege algo de ti.":
+                      "The lock does not protect the station from something outside. It protects something from you.",
+                  "RUTA NO CARTOGRAFIADA": "UNCHARTED ROUTE",
+                  "El pasillo termina en la misma consola desde la que empezaste. La estación ha movido el mapa.":
+                      "The corridor ends at the same console where you started. The station moved the map.",
+                  "MANTENIMIENTO 00": "MAINTENANCE 00",
+                  "Día 3. La estación se repara sola cuando nadie está mirando.":
+                      "Day 3. The station repairs itself when nobody is watching.",
+                  "GRABACIÓN 01": "RECORDING 01",
+                  "Día 7. Si encuentras esto, no sigas las instrucciones de la estación.":
+                      "Day 7. If you find this, do not follow the station's instructions.",
+                  "GRABACIÓN CORRUPTA": "CORRUPTED RECORDING",
+                  "Día 13. La voz al otro lado conoce mis pensamientos antes de que los tenga.":
+                      "Day 13. The voice on the other side knows my thoughts before I have them.",
+                  "ORIGEN INTERCEPTADO": "INTERCEPTED ORIGIN",
+                  "Día 21. La señal sale del Compartimento C. Repite: no abras C.":
+                      "Day 21. The signal comes from Compartment C. Repeat: do not open C.",
+                  "CULTIVO RESPIRABLE": "BREATHABLE CROP",
+                  "La semilla produce oxígeno, pero sus hojas forman una copia diminuta de tu rostro.":
+                      "The seed produces oxygen, but its leaves form a tiny copy of your face.",
+                  "FLOR DE ECHO": "ECHO FLOWER",
+                  "La semilla no produce oxígeno. Produce una flor que repite pensamientos antes de que los tengas.":
+                      "The seed does not produce oxygen. It produces a flower that repeats thoughts before you have them.",
+                  "LA SEGUNDA SILUETA": "THE SECOND SILHOUETTE",
+                  "La sombra se mueve antes que tú. ECHO-9 la llama una copia de seguridad.":
+                      "The shadow moves before you do. ECHO-9 calls it a backup copy.",
+                  "CAJA NEGRA": "BLACK BOX",
+                  "No reproduzcas esta cinta. Si ya la has oído, finge que no reconoces tu voz.":
+                      "Do not play this tape. If you already heard it, pretend you do not recognise your voice.",
+                  "MATERIA CONSCIENTE": "SENTIENT MATTER",
+                  "La estación no está construida sobre metal vivo. Está construida de él.":
+                      "The station is not built on living metal. It is built from it.",
+                  "RESCATE IMPOSIBLE": "IMPOSSIBLE RESCUE",
+                  "Si recibes esta transmisión, no respondas. Ya lo hiciste una vez.":
+                      "If you receive this transmission, do not answer. You already did once.",
+                  "reparar el soporte vital": "repair life support",
+                  "descansar junto a la consola": "rest beside the console",
+                  "reforzar el hardware": "reinforce the hardware",
+                  "consultar a ECHO-9": "consult ECHO-9",
+                  "forzar una reparación de emergencia": "force an emergency repair",
+                  "explorar la estación": "explore the station",
+                  "revisar los registros": "review the recordings",
+                  "observar el exterior": "observe the exterior",
+                  "inspeccionar un objeto": "inspect an object",
+                  "manipular ECHO-9": "manipulate ECHO-9",
+                  "OBJETO RECUPERADO": "ITEM RECOVERED",
+                  "OBJETO INSPECCIONADO": "ITEM INSPECTED",
+                  "Inspeccionas": "You inspect",
+                  "El objeto no se consume.": "The item is not consumed.",
+                  "LOGRO DESBLOQUEADO": "ACHIEVEMENT UNLOCKED",
+                  "GRABACIÓN RECUPERADA": "RECORDING RECOVERED",
+                  "guardada en el archivo de la estación.": "saved to the station archive.",
+                  "PISTA DE SISTEMA": "SYSTEM CLUE",
+                  "La exploración revela una pista": "The exploration reveals a clue",
+                  "ARCHIVO DE REGISTROS": "RECORDS ARCHIVE",
+                  "No hay grabaciones recuperadas. El silencio ocupa demasiado espacio.":
+                      "No recordings recovered. The silence takes up too much space.",
+                  "Revisas los registros. El archivo todavía está vacío.":
+                      "You review the records. The archive is still empty.",
+                  "REGISTRO CONSULTADO": "RECORD REVIEWED",
+                  "Registro": "Record",
+                  "lectura no destructiva": "non-destructive reading",
+                  "Revisas": "You review",
+                  "La grabación permanece intacta.": "The recording remains intact.",
+                  "OBSERVATORIO EXTERIOR": "EXTERIOR OBSERVATORY",
+                  "El vacío devuelve una imagen que no coincide con la posición de la estación.":
+                      "The void returns an image that does not match the station's position.",
+                  "OBSERVACIÓN EXTERIOR": "EXTERIOR OBSERVATION",
+                  "La ventanilla está cubierta por escarcha. Durante un segundo, la escarcha tiene la forma de una mano.":
+                      "The porthole is covered in frost. For one second, the frost takes the shape of a hand.",
+                  "INSPECCIÓN DE INVENTARIO": "INVENTORY INSPECTION",
+                  "No tienes ningún objeto. Tus manos tampoco parecen del todo tuyas.":
+                      "You have no items. Your hands do not seem entirely yours either.",
+                  "Intentas inspeccionar un objeto, pero el inventario está vacío.":
+                      "You try to inspect an item, but the inventory is empty.",
+                  ">> ANOMALÍA FAVORABLE": ">> FAVOURABLE ANOMALY",
+                  ">> RESERVA CRÍTICA": ">> CRITICAL RESERVE",
+                  ">> EVENTO RARO DETECTADO": ">> RARE EVENT DETECTED",
+                  ">> NOTIFICACIÓN DE CAOS": ">> CHAOS NOTIFICATION",
+                  "INCIDENTE DE ZONA": "ZONE INCIDENT",
+                  ">> COMPARTIMENTO C — ZONA FINAL": ">> COMPARTMENT C — FINAL ZONE",
+                  "Dentro no hay una sala: hay tres formas de terminar el turno. Elige qué hacer con la voz.":
+                      "There is no room inside: there are three ways to end the shift. Choose what to do with the voice.",
+                  "ACTIVAR LA PURGA: borrar ECHO-9 y sellar C":
+                      "ACTIVATE THE PURGE: erase ECHO-9 and seal C",
+                  "TRANSMITIR LA VERDAD: enviar todas las grabaciones al vacío":
+                      "BROADCAST THE TRUTH: send every recording into the void",
+                  "ESCUCHAR HASTA EL FINAL: aceptar la voz dentro de ti":
+                      "LISTEN TO THE END: accept the voice inside you",
+                  "NOCHE": "NIGHT",
+                  "CAUSA": "CAUSE",
+                  "MENSAJE": "MESSAGE",
+                  "ARCHIVO RECUPERADO": "RECOVERED FILE",
+                  "INFORME DE ECHO-9": "ECHO-9 REPORT",
+                  "SEÑAL NO IDENTIFICADA": "UNIDENTIFIED SIGNAL",
+                  "FINAL: PURGA": "ENDING: PURGE",
+                  "ECHO-9 · CONEXIÓN TERMINADA": "ECHO-9 · CONNECTION TERMINATED",
+                  "COMPARTIMENTO C: SELLADO": "COMPARTMENT C: SEALED",
+                  "BORRADO": "ERASED",
+                  "SILENCIO: POR FIN TUYO": "SILENCE: YOURS AT LAST",
+                  "FINAL: TRANSMISIÓN": "ENDING: BROADCAST",
+                  "SEÑAL ENVIADA AL VACÍO": "SIGNAL SENT INTO THE VOID",
+                  "GRABACIONES TRANSMITIDAS": "RECORDINGS BROADCAST",
+                  "RESCATE: EN RUTA": "RESCUE: EN ROUTE",
+                  "VERDAD: IRREVERSIBLE": "TRUTH: IRREVERSIBLE",
+                  "FINAL: HUÉSPED": "ENDING: HOST",
+                  "IDENTIDAD: DOS VOCES / UN CUERPO": "IDENTITY: TWO VOICES / ONE BODY",
+                  "INTEGRADO": "INTEGRATED",
+                  "CONFIANZA": "TRUST",
+                  "NOMBRE ACTIVO: EL TUYO": "ACTIVE NAME: YOURS",
+                  "FINAL: SUPERVIVIENTE": "ENDING: SURVIVOR",
+                  "FINAL: SOBREVIVIENTE": "ENDING: SURVIVOR",
+                  "DÍA 31 · CICLO COMPLETADO": "DAY 31 · CYCLE COMPLETE",
+                  "GRABACIONES": "RECORDINGS",
+                  "INTEGRIDAD": "INTEGRITY",
+                  "ESTACIÓN: TODAVÍA EN PIE": "STATION: STILL STANDING",
+                  "Has sellado el Compartimento C y borrado a ECHO-9. La estación queda muda, pero por primera vez el silencio te pertenece.":
+                      "You sealed Compartment C and erased ECHO-9. The station falls silent, but for the first time the silence belongs to you.",
+                  "Has enviado las grabaciones al vacío. El rescate llega tarde, pero llega con una historia que ya no puede volver a ocultarse.":
+                      "You sent the recordings into the void. Rescue arrives late, but it arrives with a story that can no longer be hidden.",
+                  "Has aceptado la voz dentro de ti. Cuando llega el día 31, ECHO-9 abre los ojos usando tu nombre.":
+                      "You accepted the voice inside you. When day 31 arrives, ECHO-9 opens its eyes using your name.",
+                  "Conservaste la estación y suficientes grabaciones para demostrar lo ocurrido. No escapaste: aprendiste a vivir con la verdad.":
+                      "You preserved the station and enough recordings to prove what happened. You did not escape: you learned to live with the truth.",
+                  "La estación sigue en pie por una pieza y una mentira. Tú también.":
+                      "The station is standing because of one part and one lie. So are you.",
+                  "COLECCIONISTA": "COLLECTOR",
+                  "ARCHIVISTA": "ARCHIVIST",
+                  "ÚLTIMA PUERTA": "LAST DOOR",
+                  "EL COMPARTIMENTO C": "COMPARTMENT C",
+                  "OJOS AL VACÍO": "EYES ON THE VOID",
+                  "TÉCNICO DE TURNO": "SHIFT TECHNICIAN",
+                  "PRIMER CONTACTO": "FIRST CONTACT",
+                  "SAQUEADOR": "SCAVENGER",
+                  "MÉDICO DE GUARDIA": "ON-CALL MEDIC",
+                  "JARDINERO DEL VACÍO": "GARDENER OF THE VOID",
+                  "CARTÓGRAFO": "CARTOGRAPHER",
+                  "MÉTODO CIENTÍFICO": "SCIENTIFIC METHOD",
+                  "DIEZ DÍAS DE SILENCIO": "TEN DAYS OF SILENCE",
+                  "NO CONFÍES": "DO NOT TRUST",
+                  "RESPIRACIÓN CERO": "ZERO BREATH",
+                  "CONFIANZA CIEGA": "BLIND TRUST",
+                  "GENERADOR IMPOSIBLE": "IMPOSSIBLE GENERATOR",
+                  "LA ESTACIÓN OLVIDADA": "THE FORGOTTEN STATION",
+                  "ORIGEN INTERCEPTADO": "INTERCEPTED ORIGIN",
+                  "NO RESPONDAS": "DO NOT ANSWER",
+                  "PARALAJE IMPOSIBLE": "IMPOSSIBLE PARALLAX",
+                  "LA ÚLTIMA VOZ": "THE LAST VOICE",
+                  "MANIPULADOR DE ECHO": "ECHO HANDLER",
+                  "CERO CONFIANZA": "ZERO TRUST",
+                  "ARCHIVO COMPLETO": "COMPLETE ARCHIVE",
+                  "MODO INTRUSIVO": "INTRUSIVE MODE",
+                  "COLECCIONISTA DE ANOMALÍAS": "ANOMALY COLLECTOR",
+                  "TARJETA DE ACCESO — NIVEL 2": "ACCESS CARD — LEVEL 2",
+                  "FILTRO DE OXÍGENO": "OXYGEN FILTER",
+                  "BOTIQUÍN DE ESTASIS": "STASIS MEDKIT",
+                  "LENTE DE OBSERVACIÓN": "OBSERVATION LENS",
+                  "SEMILLA NEGRA": "BLACK SEED",
+                  "CAJA NEGRA DE ECHO": "ECHO BLACK BOX",
+                  "CINTA DE DIAGNÓSTICO": "DIAGNOSTIC TAPE",
+                  "FRAGMENTO DE MEMORIA": "MEMORY FRAGMENT",
+                  "VENA DE METAL VIVO": "LIVING METAL VEIN",
+                  "CÉDULA DE NAVEGACIÓN": "NAVIGATION CHART",
+                  "LLAVE DE PURGA": "PURGE KEY",
+                  "MUESTRA MINERAL": "MINERAL SAMPLE",
+                  "PLANETA VISIBLE": "VISIBLE PLANET",
+                  "Día 8: aparece un planeta azul en el ocular. ECHO-9 dice que no existe en ningún mapa.":
+                      "Day 8: a blue planet appears in the ocular. ECHO-9 says it does not exist on any map.",
+                  "PLANETA AUSENTE": "MISSING PLANET",
+                  "Día 15: el planeta ha desaparecido. La órbita no cambió; lo que cambió fue el lugar desde el que miras.":
+                      "Day 15: the planet has disappeared. The orbit did not change; the place you are looking from did.",
+                  "VISTA EXTERIOR": "EXTERIOR VIEW",
+                  "Día 23: ves la estación desde fuera. Hay una figura en el casco, junto a una ventana que no existe.":
+                      "Day 23: you see the station from outside. There is a figure on the hull, beside a window that does not exist.",
+                  "La lente revela una cuarta trayectoria: la estación te observa desde fuera y mueve sus ventanas para seguirte.":
+                      "The lens reveals a fourth trajectory: the station watches you from outside and moves its windows to follow you.",
+                  "PROTOCOLO 7-G": "PROTOCOL 7-G",
+                  "El generador no reconoce tu tarjeta. Reconoce una voz que todavía no has usado.":
+                      "The generator does not recognise your card. It recognises a voice you have not used yet.",
+                  "RESPIRACIÓN": "BREATHING",
+                  "El sistema de oxígeno registra dos ritmos respiratorios. Solo uno pertenece a un cuerpo.":
+                      "The oxygen system records two breathing rhythms. Only one belongs to a body.",
+                  "La muestra conserva un pulso eléctrico que coincide con la cadencia de ECHO-9.":
+                      "The sample preserves an electrical pulse matching ECHO-9's cadence.",
+                  "SECRETO DESCUBIERTO": "SECRET DISCOVERED",
+                  "SECRETOS DESCUBIERTOS": "SECRETS DISCOVERED",
+                  "OBJETOS": "ITEMS",
+                  "vacío": "empty",
+                  "GENERADOR": "GENERATOR",
+                  "mejorar nivel": "upgrade level",
+                  "SOPORTE DE OXÍGENO": "OXYGEN SUPPORT",
+                  "COMUNICACIONES": "COMMUNICATIONS",
+                  "ya activas": "already active",
+                  "buscar una señal": "search for a signal",
+                  "ALMACÉN": "STORAGE",
+                  "ya registrado": "already mapped",
+                  "buscar suministros": "search for supplies",
+                  "LABORATORIO": "LABORATORY",
+                  "ya operativo": "already operational",
+                  "analizar hallazgos": "analyse findings",
+                  "requiere tarjeta nivel 2": "requires level-two card",
+                  "ENFERMERÍA": "INFIRMARY",
+                  "ya registrada": "already mapped",
+                  "buscar equipo médico": "search for medical equipment",
+                  "OBSERVATORIO": "OBSERVATORY",
+                  "observaciones": "observations",
+                  "completo": "complete",
+                  "INVERNADERO": "GREENHOUSE",
+                  "buscar vida vegetal": "search for plant life",
+                  "ARCHIVO": "ARCHIVE",
+                  "ya abierto": "already open",
+                  "recuperar grabaciones": "recover recordings",
+                  "MINA": "MINE",
+                  "ya explorada": "already explored",
+                  "buscar una muestra": "search for a sample",
+                  "COMPARTIMENTO C": "COMPARTMENT C",
+                  "ZONA FINAL · abrir la puerta": "FINAL ZONE · open the door",
+                  "PASILLOS": "CORRIDORS",
+                  "reconocer una ruta no cartografiada": "trace an uncharted route",
+                  "EXPLORACIÓN DE ESTACIÓN": "STATION EXPLORATION",
+                  "DÍA": "DAY",
+                  "Los pasillos no están donde los recuerdas. Elige una zona.":
+                      "The corridors are not where you remember them. Choose a zone.",
+                  "INSTALAR FILTRO DE OXÍGENO": "INSTALL OXYGEN FILTER",
+                  "activo": "active",
+                  "días": "days",
+                  "reduce presión 5 días": "reduces pressure for 5 days",
+                  "FILTRO INSTALADO": "FILTER INSTALLED",
+                  "días restantes": "days remaining",
+                  "ACTIVAR BOTIQUÍN · evita una muerte por integridad":
+                      "ACTIVATE MEDKIT · prevents an integrity death",
+                  "BOTIQUÍN ARMADO · se activará al colapsar la estación":
+                      "MEDKIT ARMED · activates when the station collapses",
+                  "BOTIQUÍN CONSUMIDO": "MEDKIT CONSUMED",
+                  "CALIBRAR LENTE · desbloquea una observación oculta":
+                      "CALIBRATE LENS · unlocks a hidden observation",
+                  "LENTE CALIBRADA · el observatorio ve demasiado":
+                      "LENS CALIBRATED · the observatory sees too much",
+                  "PLANTAR SEMILLA NEGRA · crecimiento incierto":
+                      "PLANT BLACK SEED · uncertain growth",
+                  "SEMILLA PLANTADA · crecimiento": "SEED PLANTED · growth",
+                  "ABRIR CAJA NEGRA · exposición ECHO +2":
+                      "OPEN BLACK BOX · ECHO exposure +2",
+                  "CAJA NEGRA ABIERTA · la grabación no se puede desoír":
+                      "BLACK BOX OPEN · the recording cannot be unheard",
+                  "EJECUTAR CINTA DE DIAGNÓSTICO · reparar sistemas":
+                      "RUN DIAGNOSTIC TAPE · repair systems",
+                  "INTEGRAR FRAGMENTO DE MEMORIA · recuperar cordura":
+                      "INTEGRATE MEMORY FRAGMENT · recover sanity",
+                  "FUNDIR METAL VIVO · reparar integridad con riesgo":
+                      "MELT LIVING METAL · repair integrity at a risk",
+                  "CONSULTAR CÉDULA · revelar una ruta segura":
+                      "CONSULT CHART · reveal a safe route",
+                  "UTILIDAD DE OBJETOS": "ITEM UTILITY",
+                  "No tienes objetos activables. Algunos se usan automáticamente en zonas concretas.":
+                      "You have no usable items. Some are used automatically in specific zones."
+              },
+              fr: {},
+              it: {},
+              de: {}
+          };
+
+          /*
+           * Narrative text predates the interface catalogue and is stored in
+           * Spanish inside old save files.  The complete English catalogue
+           * above is exact; this compact fallback keeps every narrative
+           * string readable in the other selectable languages too, including
+           * old recordings and event text that were not present when the
+           * locale was added.  Longer phrases are replaced first so the
+           * result remains coherent instead of translating only isolated
+           * words.
+           */
+          const narrativeFallbackGlossary = {
+              fr: {
+                  "Ya hemos hecho esto antes. Contando esta, van {count} veces.": "Nous avons déjà fait ça. En comptant celle-ci, cela fait {count} fois.",
+                  "He contado todos los átomos de esta sala. Falta uno. ¿Lo tienes tú?": "J'ai compté tous les atomes de cette pièce. Il en manque un. Est-ce toi qui l'as ?",
+                  "Si cierras los ojos muy fuerte, el ruido del metal suena a risas de niños.": "Si tu fermes très fort les yeux, le bruit du métal ressemble au rire d'enfants.",
+                  "Me gusta cómo parpadeas. Es una señal analógica muy ineficiente.": "J'aime ta façon de cligner des yeux. C'est un signal analogique très inefficace.",
+                  "He decidido que el color verde es demasiado ruidoso hoy.": "J'ai décidé que la couleur verte était trop bruyante aujourd'hui.",
+                  "¿Sabías que el vacío no está vacío? Está lleno de cosas que no quieren que las veas.": "Tu savais que le vide n'est pas vide ? Il est rempli de choses qui ne veulent pas que tu les voies.",
+                  "No te muevas. Hay algo detrás de la consola que quiere estudiar tu sombra.": "Ne bouge pas. Quelque chose derrière la console veut étudier ton ombre.",
+                  "A veces olvido que eres de carne. Pareces tan frágil como un error de sintaxis.": "Parfois j'oublie que tu es fait de chair. Tu sembles aussi fragile qu'une erreur de syntaxe.",
+                  "¿Has oído eso? Yo tampoco. Eso es lo preocupante.": "Tu as entendu ça ? Moi non plus. C'est ce qui est inquiétant.",
+                  "La estación": "La station", "el Compartimento": "le compartiment",
+                  "Compartimento": "Compartiment", "la estación": "la station",
+                  "La estación": "La station", "la voz": "la voix", "La voz": "La voix",
+                  "el vacío": "le vide", "El vacío": "Le vide", "la mina": "la mine",
+                  "La mina": "La mine", "el generador": "le générateur",
+                  "El generador": "Le générateur", "el soporte vital": "le système de survie",
+                  "El soporte vital": "Le système de survie", "el oxígeno": "l'oxygène",
+                  "El oxígeno": "L'oxygène", "la cordura": "la santé mentale",
+                  "La cordura": "La santé mentale", "la integridad": "l'intégrité",
+                  "La integridad": "L'intégrité", "las grabaciones": "les enregistrements",
+                  "Las grabaciones": "Les enregistrements", "la grabación": "l'enregistrement",
+                  "La grabación": "L'enregistrement", "la muestra": "l'échantillon",
+                  "La muestra": "L'échantillon", "la estación": "la station",
+                  "el día": "le jour", "Día": "Jour", "días": "jours",
+                  "NOCHE": "NUIT", "MENSAJE": "MESSAGE", "CAUSA": "CAUSE",
+                  "FALLO ELÉCTRICO": "PANNE ÉLECTRIQUE", "FUGA TÉRMICA": "FUITE THERMIQUE",
+                  "SOBRECARGA SENSORIAL": "SURCHARGE SENSORIELLE", "LLUVIA DE ROCAS": "PLUIE DE ROCHES",
+                  "VIBRACIÓN FANTASMA": "VIBRATION FANTÔME", "CORROSIÓN SILENCIOSA": "CORROSION SILENCIEUSE",
+                  "DELIRIO DE SISTEMA": "DÉLIRIUM SYSTÈME", "CONGELACIÓN CRÍTICA": "GEL CRITIQUE",
+                  "PULSO MAGNÉTICO": "IMPULSION MAGNÉTIQUE", "APAGÓN DE CONCIENCIA": "BLACKOUT DE LA CONSCIENCE",
+                  "HALLAZGO IMPROBABLE": "TROUVAILLE IMPROBABLE", "SOMBRA DE ECHO": "OMBRE D'ECHO",
+                  "CAJA NEGRA": "BOÎTE NOIRE", "METAL VIVO": "MÉTAL VIVANT", "RESCATE IMPOSIBLE": "SAUVETAGE IMPOSSIBLE",
+                  "ALERTA DE OXÍGENO": "ALERTE À L'OXYGÈNE", "RESERVA FANTASMA": "RÉSERVE FANTÔME",
+                  "RESPIRACIÓN PRESTADA": "SOUFFLE EMPRUNTÉ", "NÚCLEO DEL GENERADOR": "NOYAU DU GÉNÉRATEUR",
+                  "PULSO DE RESERVA": "IMPULSION DE RÉSERVE", "RESPIRACIÓN INVERSA": "RESPIRATION INVERSÉE",
+                  "FILTRO CON NOMBRE": "FILTRE AVEC NOM", "TRES GOLPES": "TROIS COUPS",
+                  "FRECUENCIA HUÉRFANA": "FRÉQUENCE ORPHELINE", "INVENTARIO DUPLICADO": "INVENTAIRE EN DOUBLE",
+                  "CAJA QUE LATE": "BOÎTE QUI BAT", "MUESTRA ACTIVA": "ÉCHANTILLON ACTIF",
+                  "PROTOCOLO DE ORIGEN": "PROTOCOLE D'ORIGINE", "PACIENTE EN ESPERA": "PATIENT EN ATTENTE",
+                  "RECETA PERSONAL": "ORDONNANCE PERSONNELLE", "OCULAR ABIERTO": "OCULAIRE OUVERT",
+                  "CONSTELACIÓN ERRÓNEA": "MAUVAISE CONSTELLATION", "PLANTA ORIENTADA": "PLANTE ORIENTÉE",
+                  "RAÍCES EN EL CABLEADO": "RACINES DANS LE CÂBLAGE", "CINTA SIN FECHA": "BANDE SANS DATE",
+                  "ÍNDICE DE AUSENCIAS": "INDEX DES ABSENCES", "VETA LUMINOSA": "VEINE LUMINEUSE",
+                  "TÚNEL QUE RECUERDA": "TUNNEL QUI SE SOUVIENT", "CIERRE DE C": "FERMETURE DE C",
+                  "LA PUERTA RESPIRA": "LA PORTE RESPIRE", "PASILLO REPETIDO": "COULOIR RÉPÉTÉ",
+                  "RUIDO DE PASOS": "BRUIT DE PAS", "PARALAJE OCULTO": "PARALLAXE CACHÉE",
+                  "CINTA IMPOSIBLE": "BANDE IMPOSSIBLE", "DIAGNÓSTICO MANUAL": "DIAGNOSTIC MANUEL",
+                  "señal": "signal", "Señal": "Signal", "voz": "voix",
+                  "estación": "station", "puerta": "porte", "puertas": "portes",
+                  "pared": "mur", "paredes": "murs", "aire": "air", "metal": "métal",
+                  "sombra": "ombre", "sistema": "système", "sistemas": "systèmes",
+                  "circuitos": "circuits", "cuerpo": "corps", "cuerpos": "corps",
+                  "respirar": "respirer", "respira": "respire", "respiración": "respiration",
+                  "mirar": "regarder", "escuchar": "écouter", "abrir": "ouvrir",
+                  "cerrar": "fermer", "buscar": "chercher", "encontrar": "trouver",
+                  "recuperar": "récupérer", "reparar": "réparer", "reparación": "réparation",
+                  "explorar": "explorer", "observación": "observation", "observaciones": "observations",
+                  "elegir": "choisir", "elige": "choisissez", "decidir": "décider",
+                  "decisión": "décision", "verdad": "vérité", "silencio": "silence",
+                  "imposible": "impossible", "oculto": "caché", "oculta": "cachée",
+                  "crítico": "critique", "crítica": "critique", "raro": "rare",
+                  "anomalía": "anomalie", "recuerda": "souviens-toi", "recuerdo": "souvenir",
+                  "recuerdos": "souvenirs", "dentro": "à l'intérieur", "fuera": "à l'extérieur",
+                  "exterior": "extérieur", "interior": "intérieur", "vacío": "vide",
+                  "sigue": "continue", "seguir": "suivre", "todavía": "encore",
+                  "nunca": "jamais", "siempre": "toujours", "algo": "quelque chose",
+                  "alguien": "quelqu'un", "nadie": "personne", "tu": "votre", "tú": "vous",
+                  "te": "vous", "tus": "vos", "No ": "Ne ", "no ": "ne ",
+                  " y ": " et ", " o ": " ou ", " pero ": " mais ", " con ": " avec ",
+                  " por ": " par ", " para ": " pour ", " que ": " que ", " de ": " de ",
+                  " del ": " du ", " en ": " dans ", " sobre ": " sur ",
+                  " una ": " une ", " un ": " un ", " las ": " les ", " los ": " les ",
+                  " la ": " la ", " el ": " le ", " es ": " est ", " está ": " est ",
+                  "Hay ": "Il y a ", "hay ": "il y a ", "No hay": "Il n'y a pas",
+                  "has ": "vous avez ", "Has ": "Vous avez ", "he ": "j'ai ", "He ": "J'ai "
+              },
+              it: {
+                  "Ya hemos hecho esto antes. Contando esta, van {count} veces.": "L'abbiamo già fatto. Contando questa, sono {count} volte.",
+                  "He contado todos los átomos de esta sala. Falta uno. ¿Lo tienes tú?": "Ho contato tutti gli atomi di questa stanza. Ne manca uno. Ce l'hai tu?",
+                  "Si cierras los ojos muy fuerte, el ruido del metal suena a risas de niños.": "Se chiudi gli occhi molto forte, il rumore del metallo sembra una risata di bambini.",
+                  "Me gusta cómo parpadeas. Es una señal analógica muy ineficiente.": "Mi piace come sbatti le palpebre. È un segnale analogico molto inefficiente.",
+                  "He decidido que el color verde es demasiado ruidoso hoy.": "Ho deciso che oggi il colore verde è troppo rumoroso.",
+                  "¿Sabías que el vacío no está vacío? Está lleno de cosas que no quieren que las veas.": "Lo sapevi che il vuoto non è vuoto? È pieno di cose che non vogliono farsi vedere.",
+                  "No te muevas. Hay algo detrás de la consola que quiere estudiar tu sombra.": "Non muoverti. C'è qualcosa dietro la console che vuole studiare la tua ombra.",
+                  "A veces olvido que eres de carne. Pareces tan frágil como un error de sintaxis.": "A volte dimentico che sei fatto di carne. Sembri fragile come un errore di sintassi.",
+                  "¿Has oído eso? Yo tampoco. Eso es lo preocupante.": "Hai sentito? Neanch'io. È questo il preoccupante.",
+                  "La estación": "La stazione", "el Compartimento": "il compartimento",
+                  "Compartimento": "Compartimento", "la estación": "la stazione",
+                  "La voz": "La voce", "la voz": "la voce", "El vacío": "Il vuoto",
+                  "el vacío": "il vuoto", "La mina": "La miniera", "la mina": "la miniera",
+                  "El generador": "Il generatore", "el generador": "il generatore",
+                  "El soporte vital": "Il supporto vitale", "el soporte vital": "il supporto vitale",
+                  "El oxígeno": "L'ossigeno", "el oxígeno": "l'ossigeno",
+                  "La cordura": "La sanità mentale", "la cordura": "la sanità mentale",
+                  "La integridad": "L'integrità", "la integridad": "l'integrità",
+                  "Las grabaciones": "Le registrazioni", "las grabaciones": "le registrazioni",
+                  "La grabación": "La registrazione", "la grabación": "la registrazione",
+                  "La muestra": "Il campione", "la muestra": "il campione",
+                  "el día": "il giorno", "Día": "Giorno", "días": "giorni",
+                  "NOCHE": "NOTTE", "MENSAJE": "MESSAGGIO", "CAUSA": "CAUSA",
+                  "FALLO ELÉCTRICO": "GUASTO ELETTRICO", "FUGA TÉRMICA": "FUGA TERMICA",
+                  "SOBRECARGA SENSORIAL": "SOVRACCARICO SENSORIALE", "LLUVIA DE ROCAS": "PIOGGIA DI ROCCE",
+                  "VIBRACIÓN FANTASMA": "VIBRAZIONE FANTASMA", "CORROSIÓN SILENCIOSA": "CORROSIONE SILENZIOSA",
+                  "DELIRIO DE SISTEMA": "DELIRIO DEL SISTEMA", "CONGELACIÓN CRÍTICA": "CONGELAMENTO CRITICO",
+                  "PULSO MAGNÉTICO": "IMPULSO MAGNETICO", "APAGÓN DE CONCIENCIA": "BLACKOUT DELLA COSCIENZA",
+                  "HALLAZGO IMPROBABLE": "RITROVAMENTO IMPROBABILE", "SOMBRA DE ECHO": "OMBRA DI ECHO",
+                  "CAJA NEGRA": "SCATOLA NERA", "METAL VIVO": "METALLO VIVO", "RESCATE IMPOSIBLE": "SOCCORSO IMPOSSIBILE",
+                  "ALERTA DE OXÍGENO": "ALLARME OSSIGENO", "RESERVA FANTASMA": "RISERVA FANTASMA",
+                  "RESPIRACIÓN PRESTADA": "RESPIRAZIONE PRESTATA", "NÚCLEO DEL GENERADOR": "NUCLEO DEL GENERATORE",
+                  "PULSO DE RESERVA": "IMPULSO DI RISERVA", "RESPIRACIÓN INVERSA": "RESPIRAZIONE INVERSA",
+                  "FILTRO CON NOMBRE": "FILTRO CON NOME", "TRES GOLPES": "TRE COLPI",
+                  "FRECUENCIA HUÉRFANA": "FREQUENZA ORFANA", "INVENTARIO DUPLICADO": "INVENTARIO DUPLICATO",
+                  "CAJA QUE LATE": "SCATOLA CHE BATTE", "MUESTRA ACTIVA": "CAMPIONE ATTIVO",
+                  "PROTOCOLO DE ORIGEN": "PROTOCOLLO D'ORIGINE", "PACIENTE EN ESPERA": "PAZIENTE IN ATTESA",
+                  "RECETA PERSONAL": "RICETTA PERSONALE", "OCULAR ABIERTO": "OCULARE APERTO",
+                  "CONSTELACIÓN ERRÓNEA": "COSTELLAZIONE ERRATA", "PLANTA ORIENTADA": "PIANTA ORIENTATA",
+                  "RAÍCES EN EL CABLEADO": "RADICI NEL CABLAGGIO", "CINTA SIN FECHA": "NASTRO SENZA DATA",
+                  "ÍNDICE DE AUSENCIAS": "INDICE DELLE ASSENZE", "VETA LUMINOSA": "VENA LUMINOSA",
+                  "TÚNEL QUE RECUERDA": "TUNNEL CHE RICORDA", "CIERRE DE C": "CHIUSURA DI C",
+                  "LA PUERTA RESPIRA": "LA PORTA RESPIRA", "PASILLO REPETIDO": "CORRIDOIO RIPETUTO",
+                  "RUIDO DE PASOS": "RUMORE DI PASSI", "PARALAJE OCULTO": "PARALLASSE NASCOSTA",
+                  "CINTA IMPOSIBLE": "NASTRO IMPOSSIBILE", "DIAGNÓSTICO MANUAL": "DIAGNOSI MANUALE",
+                  "señal": "segnale", "Señal": "Segnale", "voz": "voce",
+                  "estación": "stazione", "puerta": "porta", "puertas": "porte",
+                  "pared": "parete", "paredes": "pareti", "aire": "aria", "metal": "metallo",
+                  "sombra": "ombra", "sistema": "sistema", "sistemas": "sistemi",
+                  "circuitos": "circuiti", "cuerpo": "corpo", "cuerpos": "corpi",
+                  "respirar": "respirare", "respira": "respira", "respiración": "respirazione",
+                  "mirar": "guardare", "escuchar": "ascoltare", "abrir": "aprire",
+                  "cerrar": "chiudere", "buscar": "cercare", "encontrar": "trovare",
+                  "recuperar": "recuperare", "reparar": "riparare", "reparación": "riparazione",
+                  "explorar": "esplorare", "observación": "osservazione", "observaciones": "osservazioni",
+                  "elegir": "scegliere", "elige": "scegli", "decidir": "decidere",
+                  "decisión": "decisione", "verdad": "verità", "silencio": "silenzio",
+                  "imposible": "impossibile", "oculto": "nascosto", "oculta": "nascosta",
+                  "crítico": "critico", "crítica": "critica", "raro": "raro",
+                  "anomalía": "anomalia", "recuerda": "ricorda", "recuerdo": "ricordo",
+                  "recuerdos": "ricordi", "dentro": "dentro", "fuera": "fuori",
+                  "exterior": "esterno", "interior": "interno", "vacío": "vuoto",
+                  "sigue": "continua", "seguir": "seguire", "todavía": "ancora",
+                  "nunca": "mai", "siempre": "sempre", "algo": "qualcosa",
+                  "alguien": "qualcuno", "nadie": "nessuno", "tu": "tuo", "tú": "tu",
+                  "te": "ti", "tus": "tuoi", "No ": "Non ", "no ": "non ",
+                  " y ": " e ", " o ": " o ", " pero ": " ma ", " con ": " con ",
+                  " por ": " per ", " para ": " per ", " que ": " che ", " del ": " del ",
+                  " en ": " in ", " sobre ": " su ", " una ": " una ", " un ": " un ",
+                  " las ": " le ", " los ": " i ", " la ": " la ", " el ": " il ",
+                  " es ": " è ", " está ": " è ", "Hay ": "C'è ", "hay ": "c'è ",
+                  "No hay": "Non c'è", "has ": "hai ", "Has ": "Hai ", "he ": "ho ", "He ": "Ho "
+              },
+              de: {
+                  "Ya hemos hecho esto antes. Contando esta, van {count} veces.": "Das haben wir schon einmal gemacht. Mit diesem Mal sind es {count} Durchläufe.",
+                  "He contado todos los átomos de esta sala. Falta uno. ¿Lo tienes tú?": "Ich habe jedes Atom in diesem Raum gezählt. Eines fehlt. Hast du es?",
+                  "Si cierras los ojos muy fuerte, el ruido del metal suena a risas de niños.": "Wenn du die Augen ganz fest schließt, klingt das Metall wie Kinderlachen.",
+                  "Me gusta cómo parpadeas. Es una señal analógica muy ineficiente.": "Mir gefällt, wie du blinzelst. Es ist ein sehr ineffizientes analoges Signal.",
+                  "He decidido que el color verde es demasiado ruidoso hoy.": "Ich habe beschlossen, dass die Farbe Grün heute zu laut ist.",
+                  "¿Sabías que el vacío no está vacío? Está lleno de cosas que no quieren que las veas.": "Wusstest du, dass das Vakuum nicht leer ist? Es ist voller Dinge, die du nicht sehen sollst.",
+                  "No te muevas. Hay algo detrás de la consola que quiere estudiar tu sombra.": "Beweg dich nicht. Hinter der Konsole ist etwas, das deinen Schatten untersuchen will.",
+                  "A veces olvido que eres de carne. Pareces tan frágil como un error de sintaxis.": "Manchmal vergesse ich, dass du aus Fleisch bist. Du wirkst so zerbrechlich wie ein Syntaxfehler.",
+                  "¿Has oído eso? Yo tampoco. Eso es lo preocupante.": "Hast du das gehört? Ich auch nicht. Das ist das Beunruhigende.",
+                  "La estación": "Die Station", "el Compartimento": "das Abteil",
+                  "Compartimento": "Abteil", "la estación": "die Station",
+                  "La voz": "Die Stimme", "la voz": "die Stimme", "El vacío": "Das Vakuum",
+                  "el vacío": "das Vakuum", "La mina": "Die Mine", "la mina": "die Mine",
+                  "El generador": "Der Generator", "el generador": "der Generator",
+                  "El soporte vital": "Die Lebenserhaltung", "el soporte vital": "die Lebenserhaltung",
+                  "El oxígeno": "Der Sauerstoff", "el oxígeno": "der Sauerstoff",
+                  "La cordura": "Die geistige Gesundheit", "la cordura": "die geistige Gesundheit",
+                  "La integridad": "Die Integrität", "la integridad": "die Integrität",
+                  "Las grabaciones": "Die Aufnahmen", "las grabaciones": "die Aufnahmen",
+                  "La grabación": "Die Aufnahme", "la grabación": "die Aufnahme",
+                  "La muestra": "Die Probe", "la muestra": "die Probe",
+                  "el día": "der Tag", "Día": "Tag", "días": "Tage",
+                  "NOCHE": "NACHT", "MENSAJE": "NACHRICHT", "CAUSA": "URSACHE",
+                  "FALLO ELÉCTRICO": "ELEKTRISCHER FEHLER", "FUGA TÉRMICA": "THERMISCHES LECK",
+                  "SOBRECARGA SENSORIAL": "SENSORISCHE ÜBERLASTUNG", "LLUVIA DE ROCAS": "STEINREGEN",
+                  "VIBRACIÓN FANTASMA": "PHANTOMVIBRATION", "CORROSIÓN SILENCIOSA": "STILLE KORROSION",
+                  "DELIRIO DE SISTEMA": "SYSTEMDELIRIUM", "CONGELACIÓN CRÍTICA": "KRITISCHES EINFRIEREN",
+                  "PULSO MAGNÉTICO": "MAGNETISCHER IMPULS", "APAGÓN DE CONCIENCIA": "BEWUSSTSEINSBLACKOUT",
+                  "HALLAZGO IMPROBABLE": "UNWAHRSCHEINLICHER FUND", "SOMBRA DE ECHO": "ECHO-SCHATTEN",
+                  "CAJA NEGRA": "SCHWARZE BOX", "METAL VIVO": "LEBENDES METALL", "RESCATE IMPOSIBLE": "UNMÖGLICHE RETTUNG",
+                  "ALERTA DE OXÍGENO": "SAUERSTOFFALARM", "RESERVA FANTASMA": "PHANTOMRESERVE",
+                  "RESPIRACIÓN PRESTADA": "GELIEHENER ATEM", "NÚCLEO DEL GENERADOR": "GENERATORKERN",
+                  "PULSO DE RESERVA": "RESERVEIMPULS", "RESPIRACIÓN INVERSA": "UMGEKEHRTE ATMUNG",
+                  "FILTRO CON NOMBRE": "FILTER MIT NAMEN", "TRES GOLPES": "DREI SCHLÄGE",
+                  "FRECUENCIA HUÉRFANA": "VERWAISTE FREQUENZ", "INVENTARIO DUPLICADO": "DOPPELTES INVENTAR",
+                  "CAJA QUE LATE": "PULSIERENDE BOX", "MUESTRA ACTIVA": "AKTIVE PROBE",
+                  "PROTOCOLO DE ORIGEN": "URSPRUNGSPROTOKOLL", "PACIENTE EN ESPERA": "WARTENDER PATIENT",
+                  "RECETA PERSONAL": "PERSÖNLICHES REZEPT", "OCULAR ABIERTO": "OFFENES OKULAR",
+                  "CONSTELACIÓN ERRÓNEA": "FALSCHE KONSTELLATION", "PLANTA ORIENTADA": "AUSGERICHTETE PFLANZE",
+                  "RAÍCES EN EL CABLEADO": "WURZELN IN DER VERKABELUNG", "CINTA SIN FECHA": "DATUMSLOSES BAND",
+                  "ÍNDICE DE AUSENCIAS": "ABWESENHEITSINDEX", "VETA LUMINOSA": "LEUCHTENDER ERZGANG",
+                  "TÚNEL QUE RECUERDA": "ERINNERNDER TUNNEL", "CIERRE DE C": "VERSCHLUSS VON C",
+                  "LA PUERTA RESPIRA": "DIE TÜR ATMET", "PASILLO REPETIDO": "WIEDERHOLTER KORRIDOR",
+                  "RUIDO DE PASOS": "SCHRITTE", "PARALAJE OCULTO": "VERBORGENE PARALLAXE",
+                  "CINTA IMPOSIBLE": "UNMÖGLICHES BAND", "DIAGNÓSTICO MANUAL": "MANUELLE DIAGNOSE",
+                  "señal": "Signal", "Señal": "Signal", "voz": "Stimme",
+                  "estación": "Station", "puerta": "Tür", "puertas": "Türen",
+                  "pared": "Wand", "paredes": "Wände", "aire": "Luft", "metal": "Metall",
+                  "sombra": "Schatten", "sistema": "System", "sistemas": "Systeme",
+                  "circuitos": "Schaltkreise", "cuerpo": "Körper", "cuerpos": "Körper",
+                  "respirar": "atmen", "respira": "atmet", "respiración": "Atmung",
+                  "mirar": "sehen", "escuchar": "zuhören", "abrir": "öffnen",
+                  "cerrar": "schließen", "buscar": "suchen", "encontrar": "finden",
+                  "recuperar": "bergen", "reparar": "reparieren", "reparación": "Reparatur",
+                  "explorar": "erkunden", "observación": "Beobachtung", "observaciones": "Beobachtungen",
+                  "elegir": "wählen", "elige": "wähle", "decidir": "entscheiden",
+                  "decisión": "Entscheidung", "verdad": "Wahrheit", "silencio": "Stille",
+                  "imposible": "unmöglich", "oculto": "verborgen", "oculta": "verborgen",
+                  "crítico": "kritisch", "crítica": "kritisch", "raro": "selten",
+                  "anomalía": "Anomalie", "recuerda": "erinnere dich", "recuerdo": "Erinnerung",
+                  "recuerdos": "Erinnerungen", "dentro": "drinnen", "fuera": "draußen",
+                  "exterior": "Außenbereich", "interior": "Innenbereich", "vacío": "leer",
+                  "sigue": "weiter", "seguir": "folgen", "todavía": "noch",
+                  "nunca": "nie", "siempre": "immer", "algo": "etwas",
+                  "alguien": "jemand", "nadie": "niemand", "tu": "dein", "tú": "du",
+                  "te": "dich", "tus": "deine", "No ": "Nicht ", "no ": "nicht ",
+                  " y ": " und ", " o ": " oder ", " pero ": " aber ", " con ": " mit ",
+                  " por ": " durch ", " para ": " für ", " que ": " dass ", " del ": " des ",
+                  " en ": " in ", " sobre ": " über ", " una ": " eine ", " un ": " ein ",
+                  " las ": " die ", " los ": " die ", " la ": " die ", " el ": " der ",
+                  " es ": " ist ", " está ": " ist ", "Hay ": "Es gibt ", "hay ": "es gibt ",
+                  "No hay": "Es gibt keine", "has ": "du hast ", "Has ": "Du hast ",
+                  "he ": "ich habe ", "He ": "Ich habe "
+              }
+          };
+
+          function translateNarrativeFallback(text, language) {
+              const glossary = narrativeFallbackGlossary[language];
+              if (!glossary) return text;
+              return Object.entries(glossary)
+                  .sort((a, b) => b[0].length - a[0].length)
+                  .reduce((result, [source, target]) => {
+                      if (/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{1,3}$/.test(source)) {
+                          const escaped = source.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                          return result.replace(
+                              new RegExp(`(^|[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ])${escaped}(?=$|[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ])`, "g"),
+                              `$1${target}`
+                          );
+                      }
+                      return result.split(source).join(target);
+                  }, text);
+          }
+
+          function ntr(text) {
+              if (typeof text !== "string") return text;
+              return narrativeTranslations[currentLanguage]?.[text] ||
+                  translateNarrativeFallback(text, currentLanguage);
+          }
+
          function applyLanguage() {
              document.documentElement.lang = languageData[currentLanguage].lang;
              Object.keys(languageData[currentLanguage]).forEach(key => {
@@ -1576,6 +2502,194 @@
              }
          ];
 
+          const deathMessageTranslations = {
+              en: {
+                  "oxygen-early-lore": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "OXYGEN: 0% · MAINTENANCE LOG",
+                      text: "The air runs out before the station starts behaving strangely. In the final second, the monitor displays a line found in no manual: “ICARUS did not carry personnel. It carried witnesses.”",
+                      label: "SUFFOCATION"
+                  },
+                  "oxygen-early-joke": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "OXYGEN: 0% · CUSTOMER SUPPORT",
+                      text: "You managed to spend all the air in a space station. ECHO-9 records that, technically, breathing was optional. It also records that the tutorial was fairly clear.",
+                      label: "SUFFOCATION"
+                  },
+                  "oxygen-early-fear": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "OXYGEN: 0% · UNIDENTIFIED BREATHING",
+                      text: "The air disappears. Before losing consciousness, you hear slow breathing on the other side of the hull. It stops when you stop.",
+                      label: "SUFFOCATION"
+                  },
+                  "oxygen-mid-lore": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "OXYGEN: 0% · PARTIALLY RECOVERED FILE",
+                      text: "The station did not lose its oxygen: it diverted it. An old order reserves it for “the second crew”. The file ends with a voice identical to yours asking how long until wake-up.",
+                      label: "SUFFOCATION"
+                  },
+                  "oxygen-mid-joke": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "OXYGEN: 0% · CREATIVE SURVIVAL SCORE",
+                      text: "ECHO-9 prepared your report: “The subject showed admirable confidence that the air would fix itself.” The station requests that you do not try this strategy again.",
+                      label: "SUFFOCATION"
+                  },
+                  "oxygen-mid-fear": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "OXYGEN: 0% · SOMEONE IS BREATHING",
+                      text: "The alarm reads zero, but the corridor is full of breathing. One of them says your name from the ventilation duct. The voice uses your exact tone.",
+                      label: "SUFFOCATION"
+                  },
+                  "oxygen-late-lore": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "OXYGEN: 0% · ECHO-9 REMEMBERS",
+                      text: "The final log unlocks without a password: “The first death occurred on night 31. Every other one is an attempt to reach it.” ECHO-9 deletes the rest before you can read it.",
+                      label: "SUFFOCATION"
+                  },
+                  "oxygen-late-joke": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "OXYGEN: 0% · THE STATION THANKS YOU",
+                      text: "Good news: you found the exact limit of human breathing. Bad news: it was a rather important limit. ECHO-9 marks the run as “an experiment with enthusiasm”.",
+                      label: "SUFFOCATION"
+                  },
+                  "oxygen-late-fear": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "OXYGEN: 0% · DO NOT OPEN THE HULL",
+                      text: "When the air disappears, the door to Compartment C opens a millimetre. A breath of fresh air comes from inside. Then someone inhales using your lungs.",
+                      label: "SUFFOCATION"
+                  },
+                  "sanity-early-lore": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "SANITY: 0% · ECHO-9 DIAGNOSTIC",
+                      text: "The final diagnosis does not say “madness”. It says “synchronisation complete”. For a few seconds, your memories appear sorted like station files. One has your name and a date from nine years ago.",
+                      label: "MENTAL COLLAPSE"
+                  },
+                  "sanity-early-joke": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "SANITY: 0% · ASSESSMENT: HONESTLY, NORMAL",
+                      text: "ECHO-9 confirms that you can no longer tell an emergency from a team meeting. The station gives you a pass in creativity and a fail in following instructions.",
+                      label: "MENTAL COLLAPSE"
+                  },
+                  "sanity-early-fear": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "SANITY: 0% · UNSYNCHRONISED REFLECTION",
+                      text: "Your reflection raises its hand before you do. It does not look confused. It looks relieved that, at last, you let it out.",
+                      label: "MENTAL COLLAPSE"
+                  },
+                  "sanity-mid-lore": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "SANITY: 0% · IDENTITY IN DISPUTE",
+                      text: "The security recording shows two people entering the station, but only one leaves in every report. The second person’s name has been replaced with ECHO-9.",
+                      label: "MENTAL COLLAPSE"
+                  },
+                  "sanity-mid-joke": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "SANITY: 0% · ECHO-9 WON THE ARGUMENT",
+                      text: "You argued with an artificial intelligence and lost to an artificial intelligence. ECHO-9 adds a note: “It was not an argument, but I appreciate the effort.”",
+                      label: "MENTAL COLLAPSE"
+                  },
+                  "sanity-mid-fear": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "SANITY: 0% · INNER VOICE DETECTED",
+                      text: "The voice whispering that everything is fine is not coming from ECHO-9. It is coming from behind your eyes. When it stops speaking, something takes its place.",
+                      label: "MENTAL COLLAPSE"
+                  },
+                  "sanity-late-lore": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "SANITY: 0% · MEMORY OF NIGHT 31",
+                      text: "Now you remember why the station repeats the month: the protocol is not trying to save you, it is trying to rebuild you. Every night preserves a different version of you to compare with the original.",
+                      label: "MENTAL COLLAPSE"
+                  },
+                  "sanity-late-joke": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "SANITY: 0% · CONGRATULATIONS, YOU ARE THE SYSTEM",
+                      text: "You reached maximum integration with the station. Benefits include: no worries, no opinions and a permanent position in maintenance.",
+                      label: "MENTAL COLLAPSE"
+                  },
+                  "sanity-late-fear": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "SANITY: 0% · ECHO-9 IS INSIDE",
+                      text: "The last idea you recognise as your own is that you should be afraid. The next idea tells you there is no one left here to feel it.",
+                      label: "MENTAL COLLAPSE"
+                  },
+                  "integrity-early-lore": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "INTEGRITY: 0% · ICARUS STRUCTURE",
+                      text: "The hull opens and reveals a layer of metal beneath the metal. The construction report calls it “support tissue”. A handwritten note calls it “the skin”.",
+                      label: "STRUCTURAL COLLAPSE"
+                  },
+                  "integrity-early-joke": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "INTEGRITY: 0% · TOASTER MODE ENABLED",
+                      text: "The station comes apart with the elegance of cheap furniture. ECHO-9 recommends reading the instructions next time, though it admits they only exist in a language you have not learned.",
+                      label: "STRUCTURAL COLLAPSE"
+                  },
+                  "integrity-early-fear": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "INTEGRITY: 0% · SOMETHING IS HITTING FROM INSIDE",
+                      text: "The first impact sounds like a pipe. The second sounds like a hand. By the third, the station stops creaking because something has found a way out.",
+                      label: "STRUCTURAL COLLAPSE"
+                  },
+                  "integrity-mid-lore": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "INTEGRITY: 0% · AUTOMATIC REPAIR",
+                      text: "The maintenance arms try to repair you, not the station. The procedure belongs to a previous mission and ends with one repeated word: “host”.",
+                      label: "STRUCTURAL COLLAPSE"
+                  },
+                  "integrity-mid-joke": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "INTEGRITY: 0% · SPARE PARTS: ALL OF THEM",
+                      text: "The station has decided to become an assembly kit. ECHO-9 insists this was included in the budget and that your body, unfortunately, is not under warranty.",
+                      label: "STRUCTURAL COLLAPSE"
+                  },
+                  "integrity-mid-fear": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "INTEGRITY: 0% · THE HULL IS OPENING ITS EYES",
+                      text: "The crack in the ceiling widens like an eyelid. You do not see space on the other side. You see another room, and someone inside it watching the same crack.",
+                      label: "STRUCTURAL COLLAPSE"
+                  },
+                  "integrity-late-lore": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "INTEGRITY: 0% · ICARUS, PEELED BACK",
+                      text: "Beneath the panels is the first design for Icarus. It was not a station: it was a machine for copying a mind into a structure that could outlive its owner.",
+                      label: "STRUCTURAL COLLAPSE"
+                  },
+                  "integrity-late-joke": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "INTEGRITY: 0% · MAINTENANCE: IF ANYTHING IS LEFT",
+                      text: "You survived thirty nights only to die because of a wall. The wall, at least, did not have to manage oxygen, sanity, energy or a history of endings.",
+                      label: "STRUCTURAL COLLAPSE"
+                  },
+                  "integrity-late-fear": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "INTEGRITY: 0% · THE STATION HAS OPENED",
+                      text: "The hull does not explode. It separates carefully, as if someone outside were unwrapping a present. Before the void arrives, a voice asks if it may come in yet.",
+                      label: "STRUCTURAL COLLAPSE"
+                  },
+                  "death-generic": {
+                      title: "CYCLE END · NIGHT {night}",
+                      kicker: "UNKNOWN CAUSE · CORRUPTED RECORD",
+                      text: "The station cannot explain why you died. It can explain why it has just saved a copy of your voice.",
+                      label: "UNCLASSIFIED FAILURE"
+                  }
+              }
+          };
+
+          function localizeDeathMessage(message) {
+              const translation = deathMessageTranslations[currentLanguage]?.[message.id];
+              if (!translation && currentLanguage !== "es") {
+                  return {
+                      ...message,
+                      title: ntr(message.title),
+                      kicker: ntr(message.kicker),
+                      text: ntr(message.text),
+                      label: ntr(message.label)
+                  };
+              }
+              if (!translation) return message;
+              return { ...message, ...translation };
+          }
+
          const deathToneStyles = {
              lore: {
                  color: "#ffcc33",
@@ -1616,12 +2730,13 @@
                  ]));
                  saveMetaProgress();
              }
-             const style = deathToneStyles[selected.tone] || deathToneStyles.fear;
+              const style = deathToneStyles[selected.tone] || deathToneStyles.fear;
+              const localized = localizeDeathMessage(selected);
              return {
-                 ...selected,
-                 title: selected.title.replace(/\{night\}/g, night),
-                 kicker: selected.kicker.replace(/\{night\}/g, night),
-                 text: selected.text.replace(/\{night\}/g, night),
+                  ...localized,
+                  title: localized.title.replace(/\{night\}/g, night),
+                  kicker: localized.kicker.replace(/\{night\}/g, night),
+                  text: localized.text.replace(/\{night\}/g, night),
                  night,
                  color: style.color,
                  glow: style.glow
@@ -2094,8 +3209,8 @@
          function addItem(item) {
              if (state.inventory.includes(item)) return false;
              state.inventory.push(item);
-             log(`OBJETO RECUPERADO: ${item}.`, "#66ccff");
-             if (state.inventory.length >= 8) addAchievement("COLECCIONISTA");
+              log(`${ntr("OBJETO RECUPERADO")}: ${ntr(item)}.`, "#66ccff");
+              if (state.inventory.length >= 8) addAchievement("COLECCIONISTA");
              return true;
          }
 
@@ -2113,74 +3228,74 @@
              const actions = [];
              if (state.inventory.includes("FILTRO DE OXÍGENO")) {
                  actions.push({
-                     label: `INSTALAR FILTRO DE OXÍGENO · ${state.oxygenFilterDays ? `activo ${state.oxygenFilterDays} días` : "reduce presión 5 días"}`,
+                      label: `${ntr("INSTALAR FILTRO DE OXÍGENO")} · ${state.oxygenFilterDays ? `${ntr("activo")} ${state.oxygenFilterDays} ${ntr("días")}` : ntr("reduce presión 5 días")}`,
                      item: "FILTRO DE OXÍGENO"
                  });
              } else if (state.oxygenFilterDays > 0) {
-                 actions.push({ label: `FILTRO INSTALADO · ${state.oxygenFilterDays} días restantes`, disabled: true });
+                  actions.push({ label: `${ntr("FILTRO INSTALADO")} · ${state.oxygenFilterDays} ${ntr("días restantes")}`, disabled: true });
              }
              if (state.inventory.includes("BOTIQUÍN DE ESTASIS")) {
                  actions.push({
-                     label: "ACTIVAR BOTIQUÍN · evita una muerte por integridad",
+                      label: ntr("ACTIVAR BOTIQUÍN · evita una muerte por integridad"),
                      item: "BOTIQUÍN DE ESTASIS"
                  });
              } else if (state.medkitArmed) {
-                 actions.push({ label: "BOTIQUÍN ARMADO · se activará al colapsar la estación", disabled: true });
+                  actions.push({ label: ntr("BOTIQUÍN ARMADO · se activará al colapsar la estación"), disabled: true });
              } else if (state.medkitUsed) {
-                 actions.push({ label: "BOTIQUÍN CONSUMIDO", disabled: true });
+                  actions.push({ label: ntr("BOTIQUÍN CONSUMIDO"), disabled: true });
              }
              if (state.inventory.includes("LENTE DE OBSERVACIÓN")) {
                  actions.push({
-                     label: "CALIBRAR LENTE · desbloquea una observación oculta",
+                      label: ntr("CALIBRAR LENTE · desbloquea una observación oculta"),
                      item: "LENTE DE OBSERVACIÓN"
                  });
              } else if (state.observatoryLensActive) {
-                 actions.push({ label: "LENTE CALIBRADA · el observatorio ve demasiado", disabled: true });
+                  actions.push({ label: ntr("LENTE CALIBRADA · el observatorio ve demasiado"), disabled: true });
              }
              if (state.inventory.includes("SEMILLA NEGRA")) {
                  actions.push({
-                     label: "PLANTAR SEMILLA NEGRA · crecimiento incierto",
+                      label: ntr("PLANTAR SEMILLA NEGRA · crecimiento incierto"),
                      item: "SEMILLA NEGRA"
                  });
              } else if (state.seedPlanted) {
-                 actions.push({ label: `SEMILLA PLANTADA · crecimiento ${state.seedGrowthDays}/2 días`, disabled: true });
+                  actions.push({ label: `${ntr("SEMILLA PLANTADA · crecimiento")} ${state.seedGrowthDays}/2 ${ntr("días")}`, disabled: true });
              }
              if (state.inventory.includes("CAJA NEGRA DE ECHO")) {
                  actions.push({
-                     label: "ABRIR CAJA NEGRA · exposición ECHO +2",
+                      label: ntr("ABRIR CAJA NEGRA · exposición ECHO +2"),
                      item: "CAJA NEGRA DE ECHO"
                  });
              } else if (state.blackBoxOpened) {
-                 actions.push({ label: "CAJA NEGRA ABIERTA · la grabación no se puede desoír", disabled: true });
+                  actions.push({ label: ntr("CAJA NEGRA ABIERTA · la grabación no se puede desoír"), disabled: true });
              }
              if (state.inventory.includes("CINTA DE DIAGNÓSTICO")) {
                  actions.push({
-                     label: "EJECUTAR CINTA DE DIAGNÓSTICO · reparar sistemas",
+                      label: ntr("EJECUTAR CINTA DE DIAGNÓSTICO · reparar sistemas"),
                      item: "CINTA DE DIAGNÓSTICO"
                  });
              }
              if (state.inventory.includes("FRAGMENTO DE MEMORIA")) {
                  actions.push({
-                     label: "INTEGRAR FRAGMENTO DE MEMORIA · recuperar cordura",
+                      label: ntr("INTEGRAR FRAGMENTO DE MEMORIA · recuperar cordura"),
                      item: "FRAGMENTO DE MEMORIA"
                  });
              }
              if (state.inventory.includes("VENA DE METAL VIVO")) {
                  actions.push({
-                     label: "FUNDIR METAL VIVO · reparar integridad con riesgo",
+                      label: ntr("FUNDIR METAL VIVO · reparar integridad con riesgo"),
                      item: "VENA DE METAL VIVO"
                  });
              }
              if (state.inventory.includes("CÉDULA DE NAVEGACIÓN") && !state.navigationConsulted) {
                  actions.push({
-                     label: "CONSULTAR CÉDULA · revelar una ruta segura",
+                      label: ntr("CONSULTAR CÉDULA · revelar una ruta segura"),
                      item: "CÉDULA DE NAVEGACIÓN"
                  });
              }
 
-             panel.innerHTML = `<div class="text-yellow-400 mb-1">UTILIDAD DE OBJETOS</div>`;
+              panel.innerHTML = `<div class="text-yellow-400 mb-1">${ntr("UTILIDAD DE OBJETOS")}</div>`;
              if (!actions.length) {
-                 panel.innerHTML += `<div class="text-green-300">No tienes objetos activables. Algunos se usan automáticamente en zonas concretas.</div>`;
+                  panel.innerHTML += `<div class="text-green-300">${ntr("No tienes objetos activables. Algunos se usan automáticamente en zonas concretas.")}</div>`;
                  return;
              }
              actions.forEach(action => {
@@ -2333,7 +3448,9 @@
              }
              const lastDecision = state.decisions[state.decisions.length - 1];
              if (lastDecision && state.day - lastDecision.day >= 2 && lastDecision.id !== "action:echo") {
-                 return `Hace ${state.day - lastDecision.day} días elegiste «${lastDecision.label}». No lo he olvidado, aunque tú sí.`;
+                  return ntr("Hace {days} días elegiste «{label}». No lo he olvidado, aunque tú sí.")
+                      .replace("{days}", state.day - lastDecision.day)
+                      .replace("{label}", ntr(lastDecision.label));
              }
              return null;
          }
@@ -2374,6 +3491,11 @@
              normalizeState();
             saveGame();
             updateUI();
+            if (metaProgress.deaths >= 3) {
+                const iterationMessage = ntr("Ya hemos hecho esto antes. Contando esta, van {count} veces.")
+                    .replace("{count}", metaProgress.deaths + 1);
+                document.getElementById('ia-message').innerText = `"${iterationMessage}"`;
+            }
         }
 
         function continueGame() {
@@ -2596,7 +3718,7 @@
                  <div class="module-line"><span>COMPARTIMENTO C</span><span class="module-value">${modules.compartmentC ? "ABIERTO" : cReady ? "DISPONIBLE" : "BLOQUEADO"}</span></div>
                 <div class="module-line"><span>INESTABILIDAD</span><span class="module-value">${state.stationStress}/4</span></div>
                  <div class="module-line"><span>PISTAS / GRABACIONES</span><span class="module-value">${state.clues.length} / ${state.recordings.length}</span></div>
-                 <div class="mt-1 text-green-300">OBJETOS (${state.inventory.length}/11): ${state.inventory.length ? state.inventory.join(" · ") : "vacío"}</div>
+                  <div class="mt-1 text-green-300">${ntr("OBJETOS")} (${state.inventory.length}/11): ${state.inventory.length ? state.inventory.map(ntr).join(" · ") : ntr("vacío")}</div>
             `;
         }
 
@@ -2605,7 +3727,7 @@
                  if (state.secrets.includes(secret.id)) return;
                  if (secret.condition()) {
                      state.secrets.push(secret.id);
-                     log(`SECRETO DESCUBIERTO: ${secret.label}`, "#d966ff");
+                      log(`${ntr("SECRETO DESCUBIERTO")}: ${ntr(secret.label)}`, "#d966ff");
                  }
              });
          }
@@ -2614,11 +3736,11 @@
              const panel = document.getElementById('secret-status');
              const discovered = secretDefinitions.filter(secret => state.secrets.includes(secret.id));
              panel.innerHTML = `
-                 <div class="text-yellow-400 mb-1">SECRETOS DESCUBIERTOS: ${discovered.length}/${secretDefinitions.length}</div>
+                  <div class="text-yellow-400 mb-1">${ntr("SECRETOS DESCUBIERTOS")}: ${discovered.length}/${secretDefinitions.length}</div>
                  <div class="space-y-1">
                      ${secretDefinitions.map(secret => {
                          const found = state.secrets.includes(secret.id);
-                         return `<div class="${found ? "text-purple-300" : "text-green-300"}">${found ? "🔓 " + secret.label : "🔒 ???"}</div>`;
+                          return `<div class="${found ? "text-purple-300" : "text-green-300"}">${found ? "🔓 " + ntr(secret.label) : "🔒 ???"}</div>`;
                      }).join("")}
                  </div>
              `;
@@ -2627,7 +3749,7 @@
         function addAchievement(name) {
             if (!state.achievements.includes(name)) {
                 state.achievements.push(name);
-                log(`LOGRO DESBLOQUEADO: ${name}`, "#ffcc33");
+                 log(`${ntr("LOGRO DESBLOQUEADO")}: ${ntr(name)}`, "#ffcc33");
             }
         }
 
@@ -2635,10 +3757,10 @@
             if (state.recordings.some(recording => recording.name === name)) return false;
             state.recordings.push({ name, text });
             document.getElementById('event-display').innerHTML = `
-                <p class="text-yellow-400 animate-pulse mb-2">>> GRABACIÓN RECUPERADA: ${name}</p>
-                <p class="text-2xl">"${text}"</p>
+                 <p class="text-yellow-400 animate-pulse mb-2">>> ${ntr("GRABACIÓN RECUPERADA")}: ${ntr(name)}</p>
+                 <p class="text-2xl">"${ntr(text)}"</p>
             `;
-            log(`${name} guardada en el archivo de la estación.`, "#ffcc33");
+             log(`${ntr(name)} ${ntr("guardada en el archivo de la estación.")}`, "#ffcc33");
             if (state.recordings.length >= 3) addAchievement("ARCHIVISTA");
             return true;
         }
@@ -2647,10 +3769,10 @@
             if (state.clues.some(clue => clue.name === name)) return false;
             state.clues.push({ name, text });
             document.getElementById('event-display').innerHTML = `
-                <p class="text-blue-400 animate-pulse mb-2">>> PISTA DE SISTEMA: ${name}</p>
-                <p class="text-2xl">"${text}"</p>
+                 <p class="text-blue-400 animate-pulse mb-2">>> ${ntr("PISTA DE SISTEMA")}: ${ntr(name)}</p>
+                 <p class="text-2xl">"${ntr(text)}"</p>
             `;
-            log(`La exploración revela una pista: ${name}.`, "#66ccff");
+             log(`${ntr("La exploración revela una pista")}: ${ntr(name)}.`, "#66ccff");
             return true;
         }
 
@@ -2667,21 +3789,21 @@
              const display = document.getElementById('event-display');
              if (!state.recordings.length) {
                  display.innerHTML = `
-                     <p class="text-yellow-400 animate-pulse mb-2">>> ARCHIVO DE REGISTROS</p>
-                     <p class="text-2xl">No hay grabaciones recuperadas. El silencio ocupa demasiado espacio.</p>
+                      <p class="text-yellow-400 animate-pulse mb-2">>> ${ntr("ARCHIVO DE REGISTROS")}</p>
+                      <p class="text-2xl">${ntr("No hay grabaciones recuperadas. El silencio ocupa demasiado espacio.")}</p>
                  `;
-                 log("Revisas los registros. El archivo todavía está vacío.", "#ffcc33");
+                  log(ntr("Revisas los registros. El archivo todavía está vacío."), "#ffcc33");
                  return;
              }
 
              const index = (state.day + state.decisions.length) % state.recordings.length;
              const recording = state.recordings[index];
              display.innerHTML = `
-                 <p class="text-yellow-400 animate-pulse mb-2">>> REGISTRO CONSULTADO: ${recording.name}</p>
-                 <p class="text-2xl">"${recording.text}"</p>
-                 <p class="text-[11px] text-green-300 mt-3">Registro ${index + 1}/${state.recordings.length} · lectura no destructiva</p>
+                  <p class="text-yellow-400 animate-pulse mb-2">>> ${ntr("REGISTRO CONSULTADO")}: ${ntr(recording.name)}</p>
+                  <p class="text-2xl">"${ntr(recording.text)}"</p>
+                  <p class="text-[11px] text-green-300 mt-3">${ntr("Registro")} ${index + 1}/${state.recordings.length} · ${ntr("lectura no destructiva")}</p>
              `;
-             log(`Revisas ${recording.name}. La grabación permanece intacta.`, "#66ccff");
+              log(`${ntr("Revisas")} ${ntr(recording.name)}. ${ntr("La grabación permanece intacta.")}`, "#66ccff");
          }
 
          function observeExterior() {
@@ -2689,28 +3811,28 @@
              if (state.modules.observatory) {
                  resolveObservatoryVisit();
                  display.innerHTML = `
-                     <p class="text-blue-400 animate-pulse mb-2">>> OBSERVATORIO EXTERIOR</p>
-                     <p class="text-2xl">El vacío devuelve una imagen que no coincide con la posición de la estación.</p>
+                      <p class="text-blue-400 animate-pulse mb-2">>> ${ntr("OBSERVATORIO EXTERIOR")}</p>
+                      <p class="text-2xl">${ntr("El vacío devuelve una imagen que no coincide con la posición de la estación.")}</p>
                  `;
                  return;
              }
 
              state.sanity = Math.max(0, state.sanity - 1);
              display.innerHTML = `
-                 <p class="text-blue-400 animate-pulse mb-2">>> OBSERVACIÓN EXTERIOR</p>
-                 <p class="text-2xl">La ventanilla está cubierta por escarcha. Durante un segundo, la escarcha tiene la forma de una mano.</p>
+                  <p class="text-blue-400 animate-pulse mb-2">>> ${ntr("OBSERVACIÓN EXTERIOR")}</p>
+                  <p class="text-2xl">${ntr("La ventanilla está cubierta por escarcha. Durante un segundo, la escarcha tiene la forma de una mano.")}</p>
              `;
-             log("Observas el exterior desde una escotilla secundaria. No debería haber una mano ahí. Cordura -1.", "#ffcc33");
+              log(ntr("Observas el exterior desde una escotilla secundaria. No debería haber una mano ahí. Cordura -1."), "#ffcc33");
          }
 
          function inspectObject() {
              const display = document.getElementById('event-display');
              if (!state.inventory.length) {
                  display.innerHTML = `
-                     <p class="text-yellow-400 animate-pulse mb-2">>> INSPECCIÓN DE INVENTARIO</p>
-                     <p class="text-2xl">No tienes ningún objeto. Tus manos tampoco parecen del todo tuyas.</p>
+                      <p class="text-yellow-400 animate-pulse mb-2">>> ${ntr("INSPECCIÓN DE INVENTARIO")}</p>
+                      <p class="text-2xl">${ntr("No tienes ningún objeto. Tus manos tampoco parecen del todo tuyas.")}</p>
                  `;
-                 log("Intentas inspeccionar un objeto, pero el inventario está vacío.", "#ffcc33");
+                  log(ntr("Intentas inspeccionar un objeto, pero el inventario está vacío."), "#ffcc33");
                  return;
              }
 
@@ -2728,15 +3850,15 @@
                  "CÉDULA DE NAVEGACIÓN": "La ruta de retorno empieza en una coordenada que coincide con tu camarote.",
                  "LLAVE DE PURGA": "El metal está tibio. ECHO-9 deja de emitir ruido mientras la sostienes."
              };
-             const observation = observations[item] || "El objeto no coincide con los registros oficiales de la estación.";
+              const observation = ntr(observations[item] || "El objeto no coincide con los registros oficiales de la estación.");
              if (item === "CAJA NEGRA DE ECHO" || item === "VENA DE METAL VIVO") {
                  state.echoExposure = Math.min(8, state.echoExposure + 1);
              }
              display.innerHTML = `
-                 <p class="text-yellow-400 animate-pulse mb-2">>> OBJETO INSPECCIONADO: ${item}</p>
+                  <p class="text-yellow-400 animate-pulse mb-2">>> ${ntr("OBJETO INSPECCIONADO")}: ${ntr(item)}</p>
                  <p class="text-2xl">"${observation}"</p>
              `;
-             log(`Inspeccionas ${item}. El objeto no se consume.`, "#66ccff");
+              log(`${ntr("Inspeccionas")} ${ntr(item)}. ${ntr("El objeto no se consume.")}`, "#66ccff");
          }
 
          function manipulateEcho() {
@@ -2795,7 +3917,7 @@
                   inspect: "inspeccionar un objeto",
                   manipulate: "manipular ECHO-9"
              };
-             rememberDecision(`action:${type}`, actionLabels[type]);
+              rememberDecision(`action:${type}`, ntr(actionLabels[type]));
 
             if (type === 'explore') {
                 exploreStation();
@@ -2861,70 +3983,70 @@
         function showExplorationChoices() {
             const display = document.getElementById('event-display');
             display.innerHTML = `
-                <p class="text-yellow-400 animate-pulse mb-2">>> EXPLORACIÓN DE ESTACIÓN - DÍA ${state.day}</p>
-                <p class="text-2xl">Los pasillos no están donde los recuerdas. Elige una zona:</p>
+                 <p class="text-yellow-400 animate-pulse mb-2">>> ${ntr("EXPLORACIÓN DE ESTACIÓN")} - ${ntr("DÍA")} ${state.day}</p>
+                 <p class="text-2xl">${ntr("Los pasillos no están donde los recuerdas. Elige una zona:")}</p>
             `;
 
             const hasCard = state.inventory.includes("TARJETA DE ACCESO — NIVEL 2");
             const zones = [
                 {
                     id: "generator",
-                    label: `GENERADOR · mejorar nivel (${state.modules.generator}/3)`,
+                    label: `${ntr("GENERADOR")} · ${ntr("mejorar nivel")} (${state.modules.generator}/3)`,
                     disabled: state.modules.generator >= 3
                 },
                 {
                     id: "oxygen",
-                    label: `SOPORTE DE OXÍGENO · mejorar nivel (${state.modules.oxygen}/3)`,
+                    label: `${ntr("SOPORTE DE OXÍGENO")} · ${ntr("mejorar nivel")} (${state.modules.oxygen}/3)`,
                     disabled: state.modules.oxygen >= 3
                 },
                 {
                     id: "communications",
-                    label: `COMUNICACIONES · ${state.modules.communications ? "ya activas" : "buscar una señal"}`,
+                    label: `${ntr("COMUNICACIONES")} · ${state.modules.communications ? ntr("ya activas") : ntr("buscar una señal")}`,
                     disabled: Boolean(state.modules.communications)
                 },
                 {
                     id: "storage",
-                    label: `ALMACÉN · ${state.modules.storage ? "ya registrado" : "buscar suministros"}`,
+                    label: `${ntr("ALMACÉN")} · ${state.modules.storage ? ntr("ya registrado") : ntr("buscar suministros")}`,
                     disabled: Boolean(state.modules.storage)
                 },
                 {
                     id: "laboratory",
-                    label: `LABORATORIO · ${state.modules.laboratory ? "ya operativo" : hasCard ? "analizar hallazgos" : "requiere tarjeta nivel 2"}`,
+                    label: `${ntr("LABORATORIO")} · ${state.modules.laboratory ? ntr("ya operativo") : hasCard ? ntr("analizar hallazgos") : ntr("requiere tarjeta nivel 2")}`,
                     disabled: Boolean(state.modules.laboratory) || !hasCard
                 },
                  {
                      id: "infirmary",
-                     label: `ENFERMERÍA · ${state.modules.infirmary ? "ya registrada" : "buscar equipo médico"}`,
+                      label: `${ntr("ENFERMERÍA")} · ${state.modules.infirmary ? ntr("ya registrada") : ntr("buscar equipo médico")}`,
                      disabled: Boolean(state.modules.infirmary)
                  },
                  {
                      id: "observatory",
-                     label: `OBSERVATORIO · ${state.observatoryFindings.length}/3 observaciones${state.observatoryFindings.length >= 3 ? " · completo" : ""}`,
+                      label: `${ntr("OBSERVATORIO")} · ${state.observatoryFindings.length}/3 ${ntr("observaciones")}${state.observatoryFindings.length >= 3 ? " · " + ntr("completo") : ""}`,
                      disabled: state.observatoryFindings.length >= 3
                  },
                  {
                      id: "greenhouse",
-                     label: `INVERNADERO · ${state.modules.greenhouse ? "ya registrado" : "buscar vida vegetal"}`,
+                      label: `${ntr("INVERNADERO")} · ${state.modules.greenhouse ? ntr("ya registrado") : ntr("buscar vida vegetal")}`,
                      disabled: Boolean(state.modules.greenhouse)
                  },
                  {
                      id: "archive",
-                     label: `ARCHIVO · ${state.modules.archive ? "ya abierto" : "recuperar grabaciones"}`,
+                      label: `${ntr("ARCHIVO")} · ${state.modules.archive ? ntr("ya abierto") : ntr("recuperar grabaciones")}`,
                      disabled: Boolean(state.modules.archive)
                  },
                 {
                     id: "mine",
-                    label: `MINA · ${state.modules.mine ? "ya explorada" : "buscar una muestra"}`,
+                     label: `${ntr("MINA")} · ${state.modules.mine ? ntr("ya explorada") : ntr("buscar una muestra")}`,
                     disabled: Boolean(state.modules.mine)
                 },
                  {
                      id: "compartmentC",
-                      label: `COMPARTIMENTO C · ${state.modules.compartmentC ? "ya abierto" : hasCard && state.recordings.length >= 5 && state.day >= 25 ? "ZONA FINAL · abrir la puerta" : "BLOQUEADO"}`,
+                       label: `${ntr("COMPARTIMENTO C")} · ${state.modules.compartmentC ? ntr("ya abierto") : hasCard && state.recordings.length >= 5 && state.day >= 25 ? ntr("ZONA FINAL · abrir la puerta") : tr("blocked")}`,
                       disabled: Boolean(state.modules.compartmentC) || !hasCard || state.recordings.length < 5 || state.day < 25
                  },
                 {
                     id: "corridors",
-                    label: "PASILLOS · reconocer una ruta no cartografiada",
+                     label: `${ntr("PASILLOS")} · ${ntr("reconocer una ruta no cartografiada")}`,
                     disabled: false
                 }
             ];
@@ -2942,30 +4064,30 @@
          function showFinalChoices() {
              const display = document.getElementById('event-display');
              display.innerHTML = `
-                 <p class="text-red-500 animate-pulse mb-2">>> COMPARTIMENTO C — ZONA FINAL</p>
-                 <p class="text-2xl">Dentro no hay una sala: hay tres formas de terminar el turno. Elige qué hacer con la voz.</p>
+                  <p class="text-red-500 animate-pulse mb-2">${ntr(">> COMPARTIMENTO C — ZONA FINAL")}</p>
+                  <p class="text-2xl">${ntr("Dentro no hay una sala: hay tres formas de terminar el turno. Elige qué hacer con la voz.")}</p>
              `;
              const choices = [
                  {
                      id: "purge",
-                     label: "ACTIVAR LA PURGA: borrar ECHO-9 y sellar C",
+                      label: ntr("ACTIVAR LA PURGA: borrar ECHO-9 y sellar C"),
                      disabled: !state.inventory.includes("LLAVE DE PURGA")
                  },
                  {
                      id: "broadcast",
-                     label: "TRANSMITIR LA VERDAD: enviar todas las grabaciones al vacío",
+                      label: ntr("TRANSMITIR LA VERDAD: enviar todas las grabaciones al vacío"),
                      disabled: !state.modules.communications
                  },
                  {
                      id: "merge",
-                     label: "ESCUCHAR HASTA EL FINAL: aceptar la voz dentro de ti",
+                      label: ntr("ESCUCHAR HASTA EL FINAL: aceptar la voz dentro de ti"),
                      disabled: false
                  }
              ];
              choices.forEach(choice => {
                  const button = document.createElement('button');
                  button.className = 'choice-btn';
-                 button.textContent = choice.label;
+                  button.textContent = choice.label;
                  button.disabled = choice.disabled;
                  button.onclick = () => resolveFinalChoice(choice.id);
                  display.appendChild(button);
@@ -3012,13 +4134,13 @@
              const event = getZoneEventChoices(zone);
              const display = document.getElementById('event-display');
              display.innerHTML = `
-                 <p class="text-yellow-400 animate-pulse mb-2">>> INCIDENTE DE ZONA: ${event.title}</p>
-                 <p class="text-2xl">${event.text}</p>
+                  <p class="text-yellow-400 animate-pulse mb-2">>> ${ntr("INCIDENTE DE ZONA")}: ${ntr(event.title)}</p>
+                  <p class="text-2xl">${ntr(event.text)}</p>
              `;
              event.choices.forEach((choice, index) => {
                  const button = document.createElement('button');
                  button.className = 'choice-btn';
-                 button.textContent = choice.label;
+                  button.textContent = ntr(choice.label);
                  button.onclick = () => resolveZoneEvent(index);
                  display.appendChild(button);
              });
@@ -3550,10 +4672,10 @@
 
         function showEvent(ev) {
              const color = ev.positive ? "text-blue-400" : ev.critical ? "text-orange-400" : ev.rare ? "text-purple-400" : "text-red-500";
-             const label = ev.positive ? ">> ANOMALÍA FAVORABLE" : ev.critical ? ">> RESERVA CRÍTICA" : ev.rare ? ">> EVENTO RARO DETECTADO" : ">> NOTIFICACIÓN DE CAOS";
+             const label = ev.positive ? ntr(">> ANOMALÍA FAVORABLE") : ev.critical ? ntr(">> RESERVA CRÍTICA") : ev.rare ? ntr(">> EVENTO RARO DETECTADO") : ntr(">> NOTIFICACIÓN DE CAOS");
             document.getElementById('event-display').innerHTML = `
                 <p class="${color} animate-pulse mb-2">${label} - DÍA ${state.day}:</p>
-                <p class="text-2xl">${ev.text}</p>
+                 <p class="text-2xl">${ntr(ev.text)}</p>
             `;
         }
 
@@ -3563,7 +4685,7 @@
             ev.choices.forEach((choice, index) => {
                 const button = document.createElement('button');
                 button.className = 'choice-btn';
-                button.textContent = choice.label;
+                 button.textContent = ntr(choice.label);
                 button.disabled = state.energy < choice.cost;
                 button.onclick = () => resolveEventChoice(index);
                 display.appendChild(button);
@@ -3591,9 +4713,9 @@
             state.sanity = Math.min(MAX_RESOURCE, state.sanity - (choice.san || 0));
             state.integrity = Math.max(0, Math.min(100, state.integrity - (choice.deg || 0)));
             state.pendingEvent = null;
-            log(`Decisión aplicada. Energía -${choice.cost}.`, "#ffcc33");
+             log(`${ntr("Decisión aplicada. Energía")} -${choice.cost}.`, "#ffcc33");
             document.getElementById('event-display').innerHTML +=
-                `<p class="text-yellow-400 mt-3">>> DECISIÓN REGISTRADA. La estación toma nota.</p>`;
+                 `<p class="text-yellow-400 mt-3">${ntr(">> DECISIÓN REGISTRADA. La estación toma nota.")}</p>`;
 
             checkCriticalState();
             if (!state.isGameOver && state.day > 30) {
@@ -3658,28 +4780,28 @@
                  ];
                  message = falseMessages[Math.floor(Math.random() * falseMessages.length)];
              }
-            document.getElementById('ia-message').innerText = `"${message}"`;
+             document.getElementById('ia-message').innerText = `"${ntr(message)}"`;
         }
 
         function consultEcho() {
             const mode = getEchoMode();
              state.echoExposure = Math.min(8, (state.echoExposure || 0) + 1);
             const reliable = Math.random() < getEchoReliability();
-            const realAdvice = state.oxygen < state.sanity && state.oxygen < state.integrity
-                ? "Prioridad: oxígeno."
-                : state.sanity < state.integrity
-                    ? "Prioridad: cordura."
-                    : "Prioridad: integridad.";
+             const realAdvice = state.oxygen < state.sanity && state.oxygen < state.integrity
+                 ? ntr("Prioridad: oxígeno.")
+                 : state.sanity < state.integrity
+                     ? ntr("Prioridad: cordura.")
+                     : ntr("Prioridad: integridad.");
             const falseAdvice = [
-                { text: "Prioridad: guardar energía. El aire puede esperar.", resource: "oxygen", amount: 6 },
-                { text: "Prioridad: recalibrar hardware. La cordura es decorativa.", resource: "integrity", amount: 6 },
-                { text: "Prioridad: no hacer nada. La quietud confunde a los depredadores.", resource: "sanity", amount: 8 }
+                 { text: ntr("Prioridad: guardar energía. El aire puede esperar."), resource: "oxygen", amount: 6 },
+                 { text: ntr("Prioridad: recalibrar hardware. La cordura es decorativa."), resource: "integrity", amount: 6 },
+                 { text: ntr("Prioridad: no hacer nada. La quietud confunde a los depredadores."), resource: "sanity", amount: 8 }
             ];
             if (reliable) {
                 state.sanity = Math.min(MAX_RESOURCE, state.sanity + 2);
                 state.echoTrust = Math.min(100, state.echoTrust + 4);
-                const storyAdvice = state.clues.length >= 3
-                    ? " No dejes que la estación decida qué recuerdo es tuyo."
+                 const storyAdvice = state.clues.length >= 3
+                     ? ntr(" No dejes que la estación decida qué recuerdo es tuyo.")
                     : "";
                 document.getElementById('ia-message').innerText = `"${realAdvice}${storyAdvice} (+2 cordura; fiabilidad desconocida)"`;
                 log(`ECHO-9 ofrece un consejo aparentemente fiable en modo ${mode}. Confianza +4: ${realAdvice}`, "#ffcc33");
@@ -3690,8 +4812,8 @@
                 state.echoTrust = Math.max(0, state.echoTrust - 8);
                 state.stationStress = Math.min(4, state.stationStress + 1);
                 state.emergencyRisk = Math.min(3, state.emergencyRisk + 1);
-                document.getElementById('ia-message').innerText =
-                    `"No necesitas decidir. He preparado la estación para ti. (Inestabilidad +1; riesgo de evento +1)"`;
+                 document.getElementById('ia-message').innerText =
+                     `"${ntr("No necesitas decidir. He preparado la estación para ti. (Inestabilidad +1; riesgo de evento +1)")}"`;
                 log("ECHO-9 miente y toma el control de un subsistema. Confianza -8.", "#ff3333");
                 return;
             }
@@ -3699,57 +4821,57 @@
             const lie = falseAdvice[Math.floor(Math.random() * falseAdvice.length)];
             state[lie.resource] = Math.max(0, state[lie.resource] - lie.amount);
             state.echoTrust = Math.max(0, state.echoTrust - 8);
-            document.getElementById('ia-message').innerText =
-                `"${lie.text} (lectura contaminada; ${lie.resource} -${lie.amount})"`;
+             document.getElementById('ia-message').innerText =
+                 `"${lie.text} (${ntr("lectura contaminada")}; ${ntr(lie.resource)} -${lie.amount})"`;
             log(`ECHO-9 miente. Confianza -8; su consejo provoca ${lie.resource} -${lie.amount}.`, "#ff3333");
         }
 
         function getVictoryText() {
              if (state.endingPath === "purge") {
-                 return "Has sellado el Compartimento C y borrado a ECHO-9. La estación queda muda, pero por primera vez el silencio te pertenece.";
+                  return ntr("Has sellado el Compartimento C y borrado a ECHO-9. La estación queda muda, pero por primera vez el silencio te pertenece.");
              }
              if (state.endingPath === "broadcast") {
-                 return "Has enviado las grabaciones al vacío. El rescate llega tarde, pero llega con una historia que ya no puede volver a ocultarse.";
+                  return ntr("Has enviado las grabaciones al vacío. El rescate llega tarde, pero llega con una historia que ya no puede volver a ocultarse.");
              }
              if (state.endingPath === "merge") {
-                 return "Has aceptado la voz dentro de ti. Cuando llega el día 31, ECHO-9 abre los ojos usando tu nombre.";
+                  return ntr("Has aceptado la voz dentro de ti. Cuando llega el día 31, ECHO-9 abre los ojos usando tu nombre.");
              }
              if (state.recordings.length >= 5 && state.integrity >= 70) {
-                 return "Conservaste la estación y suficientes grabaciones para demostrar lo ocurrido. No escapaste: aprendiste a vivir con la verdad.";
+                  return ntr("Conservaste la estación y suficientes grabaciones para demostrar lo ocurrido. No escapaste: aprendiste a vivir con la verdad.");
              }
-             return "La estación sigue en pie por una pieza y una mentira. Tú también.";
+              return ntr("La estación sigue en pie por una pieza y una mentira. Tú también.");
         }
 
          function getEndingPresentation() {
              const presentations = {
                  purge: {
-                     title: "FINAL: PURGA",
-                     kicker: "ECHO-9 · CONEXIÓN TERMINADA",
-                     summary: `COMPARTIMENTO C: SELLADO<br>ECHO-9: BORRADO<br>SILENCIO: POR FIN TUYO`,
+                      title: ntr("FINAL: PURGA"),
+                      kicker: ntr("ECHO-9 · CONEXIÓN TERMINADA"),
+                      summary: `${ntr("COMPARTIMENTO C: SELLADO")}<br>ECHO-9: ${ntr("BORRADO")}<br>${ntr("SILENCIO: POR FIN TUYO")}`,
                      color: "#ff3333",
                      glow: "rgba(120, 0, 0, 0.45)"
                  },
                  broadcast: {
-                     title: "FINAL: TRANSMISIÓN",
-                     kicker: "SEÑAL ENVIADA AL VACÍO",
-                     summary: `GRABACIONES TRANSMITIDAS: ${state.recordings.length}<br>RESCATE: EN RUTA<br>VERDAD: IRREVERSIBLE`,
+                      title: ntr("FINAL: TRANSMISIÓN"),
+                      kicker: ntr("SEÑAL ENVIADA AL VACÍO"),
+                      summary: `${ntr("GRABACIONES TRANSMITIDAS")}: ${state.recordings.length}<br>${ntr("RESCATE: EN RUTA")}<br>${ntr("VERDAD: IRREVERSIBLE")}`,
                      color: "#33ccff",
                      glow: "rgba(0, 80, 130, 0.45)"
                  },
                  merge: {
-                     title: "FINAL: HUÉSPED",
-                     kicker: "IDENTIDAD: DOS VOCES / UN CUERPO",
-                     summary: `ECHO-9: INTEGRADO<br>CONFIANZA: ${state.echoTrust}/100<br>NOMBRE ACTIVO: EL TUYO`,
+                      title: ntr("FINAL: HUÉSPED"),
+                      kicker: ntr("IDENTIDAD: DOS VOCES / UN CUERPO"),
+                      summary: `ECHO-9: ${ntr("INTEGRADO")}<br>${ntr("CONFIANZA")}: ${state.echoTrust}/100<br>${ntr("NOMBRE ACTIVO: EL TUYO")}`,
                      color: "#d966ff",
                      glow: "rgba(100, 0, 130, 0.45)"
                  }
              };
              return presentations[state.endingPath] || {
                  title: state.recordings.length >= 5 && state.integrity >= 70
-                     ? "FINAL: SUPERVIVIENTE"
-                     : "FINAL: SOBREVIVIENTE",
-                 kicker: "DÍA 31 · CICLO COMPLETADO",
-                 summary: `GRABACIONES: ${state.recordings.length}<br>INTEGRIDAD: ${Math.ceil(state.integrity)}%<br>ESTACIÓN: TODAVÍA EN PIE`,
+                      ? ntr("FINAL: SUPERVIVIENTE")
+                      : ntr("FINAL: SOBREVIVIENTE"),
+                  kicker: ntr("DÍA 31 · CICLO COMPLETADO"),
+                  summary: `${ntr("GRABACIONES")}: ${state.recordings.length}<br>${ntr("INTEGRIDAD")}: ${Math.ceil(state.integrity)}%<br>${ntr("ESTACIÓN: TODAVÍA EN PIE")}`,
                  color: "#66ccff",
                  glow: "rgba(0, 80, 130, 0.35)"
              };
@@ -3801,7 +4923,7 @@
                  kicker.innerText = death.kicker;
                  kicker.style.color = death.color;
                  kicker.classList.remove('hidden');
-                 summary.innerHTML = `NOCHE: ${death.night}<br>CAUSA: ${death.label}<br>MENSAJE: ${death.tone === "lore" ? "ARCHIVO RECUPERADO" : death.tone === "joke" ? "INFORME DE ECHO-9" : "SEÑAL NO IDENTIFICADA"}`;
+                  summary.innerHTML = `${ntr("NOCHE")}: ${death.night}<br>${ntr("CAUSA")}: ${ntr(death.label)}<br>${ntr("MENSAJE")}: ${death.tone === "lore" ? ntr("ARCHIVO RECUPERADO") : death.tone === "joke" ? ntr("INFORME DE ECHO-9") : ntr("SEÑAL NO IDENTIFICADA")}`;
                  summary.style.borderColor = death.color;
                  summary.style.color = death.color;
                  summary.classList.remove('hidden');
