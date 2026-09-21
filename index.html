@@ -444,6 +444,7 @@
 
         <!-- Footer -->
         <div class="flex justify-between text-[10px] opacity-50 z-20">
+             <span id="run-cycle">CICLO: 00</span>
              <span id="logic-status">LOGIC_STATUS: UNSTABLE</span>
              <button id="sound-toggle" onclick="toggleAudio()" class="terminal-btn px-2 py-1 text-[10px]" aria-pressed="true">🔊 SONIDO: ACTIVADO</button>
              <span id="ai-mood">AI_MOOD: NIHILISTIC</span>
@@ -553,6 +554,7 @@
                  "meta-endings": "FINALES DESCUBIERTOS",
                  "meta-secrets": "SECRETOS DESCUBIERTOS",
                  "meta-loading": "CARGANDO HISTORIAL DE SUPERVIVENCIA...",
+                 "cycle-label": "CICLO",
                  "forecast": "SIN ACCIÓN HOY",
                  "forecast-oxygen": "Oxígeno",
                  "forecast-sanity": "Cordura",
@@ -637,6 +639,7 @@
                  "meta-endings": "ENDINGS DISCOVERED",
                  "meta-secrets": "SECRETS DISCOVERED",
                  "meta-loading": "LOADING SURVIVAL HISTORY...",
+                 "cycle-label": "CYCLE",
                  "forecast": "NO ACTION TODAY",
                  "forecast-oxygen": "Oxygen",
                  "forecast-sanity": "Sanity",
@@ -721,6 +724,7 @@
                  "meta-endings": "FINALES DÉCOUVERTES",
                  "meta-secrets": "SECRETS DÉCOUVERTS",
                  "meta-loading": "CHARGEMENT DE L'HISTORIQUE...",
+                 "cycle-label": "CYCLE",
                  "forecast": "AUCUNE ACTION AUJOURD'HUI",
                  "forecast-oxygen": "Oxygène",
                  "forecast-sanity": "Santé mentale",
@@ -805,6 +809,7 @@
                  "meta-endings": "FINALI SCOPERTI",
                  "meta-secrets": "SEGRETI SCOPERTI",
                  "meta-loading": "CARICAMENTO STORICO SOPRAVVIVENZA...",
+                 "cycle-label": "CICLO",
                  "forecast": "NESSUNA AZIONE OGGI",
                  "forecast-oxygen": "Ossigeno",
                  "forecast-sanity": "Sanità mentale",
@@ -889,6 +894,7 @@
                  "meta-endings": "ENTDECKTE ENDEN",
                  "meta-secrets": "ENTDECKTE GEHEIMNISSE",
                  "meta-loading": "ÜBERLEBENSHISTORIE WIRD GELADEN...",
+                 "cycle-label": "ZYKLUS",
                  "forecast": "HEUTE KEINE AKTION",
                  "forecast-oxygen": "Sauerstoff",
                  "forecast-sanity": "Verstand",
@@ -2127,6 +2133,13 @@
              localStorage.setItem(PROFILE_KEY, JSON.stringify(metaProgress));
          }
 
+          function updateRunCycleIndicator() {
+              const indicator = document.getElementById('run-cycle');
+              if (!indicator) return;
+              const totalRuns = (Number(metaProgress.completed) || 0) + (Number(metaProgress.deaths) || 0);
+              indicator.innerText = `${tr("cycle-label")}: ${String(totalRuns).padStart(2, "0")}`;
+          }
+
          function isModeActive(mode) {
              return Array.isArray(state.modes) && state.modes.includes(mode);
          }
@@ -2140,6 +2153,7 @@
              const panel = document.getElementById('meta-progress');
              const modePanel = document.getElementById('custom-mode-panel');
              if (!panel || !modePanel) return;
+              updateRunCycleIndicator();
 
              panel.innerHTML = `
                   <div class="text-yellow-400 mb-1">${tr("meta-title")}</div>
@@ -2180,6 +2194,7 @@
                  metaProgress.deaths++;
              }
              saveMetaProgress();
+              updateRunCycleIndicator();
          }
 
         const weirdMessages = [
