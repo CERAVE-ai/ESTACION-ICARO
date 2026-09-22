@@ -451,6 +451,22 @@
         </div>
     </div>
 
+    <!-- Tutorial de primera partida: solo permanece activo durante el día 0 -->
+    <div id="tutorial-overlay" class="fixed inset-0 bg-black/95 z-[250] hidden items-center justify-center p-4">
+        <div class="border-4 border-yellow-400 p-6 max-w-xl w-full bg-[#0a0a0c]">
+            <p id="tutorial-kicker" class="text-yellow-400 text-sm tracking-widest mb-3">PROTOCOLO DE PRIMERA PARTIDA</p>
+            <h1 id="tutorial-title" class="text-3xl text-yellow-300 mb-4">DÍA 0 · CALIBRACIÓN</h1>
+            <p id="tutorial-step-title" class="text-xl text-white mb-2"></p>
+            <p id="tutorial-text" class="text-lg text-green-200 mb-6"></p>
+            <div class="flex items-center justify-between gap-4">
+                <span id="tutorial-progress" class="text-sm text-yellow-400"></span>
+                <button id="tutorial-next" onclick="advanceTutorial()" class="terminal-btn px-6 py-3 text-lg font-bold">
+                    CONTINUAR
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Game Over Modal -->
     <div id="modal" class="fixed inset-0 bg-black/95 z-[300] hidden items-center justify-center p-4">
         <div id="modal-container" class="border-4 border-red-600 p-8 max-w-md w-full bg-[#0a0a0c] text-center">
@@ -458,6 +474,14 @@
             <p id="modal-kicker" class="text-sm tracking-widest mb-4 hidden"></p>
             <p id="modal-text" class="text-xl mb-6"></p>
             <div id="modal-summary" class="border border-dashed p-3 mb-6 text-xs hidden"></div>
+            <div id="share-panel" class="border border-yellow-400/70 p-3 mb-6 text-left hidden">
+                <p id="share-label" class="text-yellow-400 text-sm tracking-widest mb-2">INFORME PARA COMPARTIR</p>
+                <textarea id="share-summary" readonly rows="10" class="w-full bg-[#111116] border border-yellow-400/60 text-green-200 p-2 text-sm resize-none"></textarea>
+                <div class="flex items-center justify-between gap-3 mt-2">
+                    <button id="share-copy-button" onclick="copyShareSummary()" class="terminal-btn px-3 py-2 text-sm">COPIAR INFORME</button>
+                    <span id="share-copy-status" class="text-sm text-yellow-300"></span>
+                </div>
+            </div>
             <button id="modal-restart" onclick="location.reload()" class="terminal-btn px-8 py-3 font-bold">REINICIAR ERROR</button>
         </div>
     </div>
@@ -913,11 +937,16 @@
          if (!languageData[currentLanguage]) currentLanguage = "es";
 
          const AUDIO_KEY = 'estacion-icaro-audio-v1';
+          const NARRATIVE_DEBUG_KEY = 'estacion-icaro-narrative-debug-v1';
+          const NARRATIVE_DEBUG_PARAM = 'debugTranslations';
          let audioContext = null;
          let audioMaster = null;
          let ambientTimer = null;
          let stationHum = [];
          let audioEnabled = localStorage.getItem(AUDIO_KEY) !== "off";
+          let narrativeDebugEnabled = localStorage.getItem(NARRATIVE_DEBUG_KEY) === "on" ||
+              new URLSearchParams(window.location.search).get(NARRATIVE_DEBUG_PARAM) === "1";
+          const narrativeFallbackAudit = new Map();
 
          function tr(key) {
              return languageData[currentLanguage]?.[key] ??
@@ -2959,6 +2988,63 @@
               },
           };
 
+           /*
+            * Auditoría opcional de traducciones narrativas.
+            *
+            * Se puede activar de cualquiera de estas formas:
+            *   - abrir el juego con ?debugTranslations=1
+            *   - ejecutar setNarrativeDebug(true) en la consola
+            *
+            * Solo se registra la ausencia de una traducción exacta. El
+            * resultado del fallback sigue siendo compatible con las partidas
+            * antiguas y no cambia el comportamiento normal del juego.
+            */
+           function auditNarrativeFallback(text, reason) {
+               if (!narrativeDebugEnabled) return;
+               const key = `${currentLanguage}\u0000${text}`;
+               const previous = narrativeFallbackAudit.get(key);
+               const entry = previous || {
+                   language: currentLanguage,
+                   text,
+                   reason,
+                   count: 0,
+                   firstSeen: new Date().toISOString()
+               };
+               entry.count += 1;
+               entry.lastSeen = new Date().toISOString();
+               narrativeFallbackAudit.set(key, entry);
+               console.warn("[i18n] ntr() ha caído en fallback", {
+                   language: entry.language,
+                   reason: entry.reason,
+                   text: entry.text,
+                   count: entry.count
+               });
+           }
+
+           function setNarrativeDebug(enabled = true) {
+               narrativeDebugEnabled = Boolean(enabled);
+               localStorage.setItem(NARRATIVE_DEBUG_KEY, narrativeDebugEnabled ? "on" : "off");
+               console.info(`[i18n] modo debug narrativo ${narrativeDebugEnabled ? "activado" : "desactivado"}.`);
+               if (narrativeDebugEnabled) {
+                   console.info("[i18n] Usa getNarrativeTranslationAudit() para consultar el resumen.");
+               }
+               return narrativeDebugEnabled;
+           }
+
+           function getNarrativeTranslationAudit() {
+               return Array.from(narrativeFallbackAudit.values())
+                   .sort((a, b) => b.count - a.count || a.text.localeCompare(b.text));
+           }
+
+           function clearNarrativeTranslationAudit() {
+               narrativeFallbackAudit.clear();
+               console.info("[i18n] auditoría narrativa vaciada.");
+           }
+
+           window.setNarrativeDebug = setNarrativeDebug;
+           window.getNarrativeTranslationAudit = getNarrativeTranslationAudit;
+           window.clearNarrativeTranslationAudit = clearNarrativeTranslationAudit;
+
           /*
            * Narrative text predates the interface catalogue and is stored in
            * Spanish inside old save files.  The complete English catalogue
@@ -3213,13 +3299,304 @@
           function ntr(text) {
               if (typeof text !== "string") return text;
               const translation = narrativeTranslations[currentLanguage]?.[text];
-              if (translation) return translation;
+               if (translation !== undefined) return translation;
+               if (currentLanguage === "es") return text;
               // Never use word-by-word substitution for complete narrative
               // sentences. Missing locale entries remain intact in Spanish so
               // the player sees one coherent language rather than a mixture.
-              if (["fr", "it", "de"].includes(currentLanguage)) return text;
-              return translateNarrativeFallback(text, currentLanguage);
+               if (["fr", "it", "de"].includes(currentLanguage)) {
+                   auditNarrativeFallback(text, "missing-locale");
+                   return text;
+               }
+               const fallback = translateNarrativeFallback(text, currentLanguage);
+               auditNarrativeFallback(text, fallback === text ? "missing-locale" : "glossary");
+               return fallback;
           }
+
+           const tutorialCopy = {
+               es: {
+                   kicker: "PROTOCOLO DE PRIMERA PARTIDA",
+                   title: "DÍA 0 · CALIBRACIÓN",
+                   steps: [
+                       ["ANTES DE SOBREVIVIR", "Este día es una calibración segura. Prueba los controles sin presión ni eventos: al terminar, el juego empezará de verdad en el día 1."],
+                       ["LEE LAS TRES RESERVAS", "Oxígeno evita que te quedes sin aire, Cordura mide tu estabilidad y la Integridad mantiene la estación en pie. Las barras pueden superar temporalmente el 100%."],
+                       ["GASTA LA ENERGÍA CON CABEZA", "Las diez acciones consumen ENE. Las primeras reparan reservas; explorar revela módulos y zonas; revisar, observar e inspeccionar descubren información y objetos."],
+                       ["ECHO-9 Y EL FINAL DEL TUTORIAL", "ECHO-9 puede aconsejarte, pero también mentir. Los módulos e ítems se activan desde los paneles laterales. Cuando termines de mirar, pulsa PASAR 24H: el día 0 se reiniciará y comenzará tu partida real."]
+                   ],
+                   next: "CONTINUAR",
+                   start: "EMPEZAR EL DÍA 0"
+               },
+               en: {
+                   kicker: "FIRST-RUN PROTOCOL",
+                   title: "DAY 0 · CALIBRATION",
+                   steps: [
+                       ["BEFORE YOU SURVIVE", "This is a safe calibration day. Test the controls without pressure or events: when it ends, the real game starts on day 1."],
+                       ["READ THE THREE RESERVES", "Oxygen keeps you breathing, Sanity measures your stability, and Integrity keeps the station standing. Bars can temporarily exceed 100%."],
+                       ["SPEND ENERGY CAREFULLY", "All ten actions cost ENE. Repairs restore reserves; exploration reveals modules and zones; records, observation and inspection uncover information and items."],
+                       ["ECHO-9 AND THE END OF THE TUTORIAL", "ECHO-9 can advise you, but it can also lie. Modules and items appear in the side panels. When ready, press SKIP 24H: day 0 resets and your real run begins."]
+                   ],
+                   next: "CONTINUE",
+                   start: "START DAY 0"
+               },
+               fr: {
+                   kicker: "PROTOCOLE DE PREMIÈRE PARTIE",
+                   title: "JOUR 0 · CALIBRAGE",
+                   steps: [
+                       ["AVANT DE SURVIVRE", "Ce jour est un calibrage sans danger. Testez les commandes sans pression ni événements : la vraie partie commencera au jour 1."],
+                       ["LISEZ LES TROIS RÉSERVES", "L'oxygène vous maintient en vie, la raison mesure votre stabilité et l'intégrité maintient la station debout. Les barres peuvent dépasser temporairement 100 %."],
+                       ["DÉPENSEZ L'ÉNERGIE AVEC SOIN", "Les dix actions coûtent de l'ENE. Réparer restaure les réserves ; explorer révèle des modules et des zones ; les registres, l'observation et l'inspection révèlent des informations et des objets."],
+                       ["ECHO-9 ET LA FIN DU TUTORIEL", "ECHO-9 peut vous conseiller, mais aussi mentir. Les modules et objets apparaissent dans les panneaux latéraux. Quand vous êtes prêt, appuyez sur PASSER 24 H : le jour 0 se réinitialise et la vraie partie commence."]
+                   ],
+                   next: "CONTINUER",
+                   start: "COMMENCER LE JOUR 0"
+               },
+               it: {
+                   kicker: "PROTOCOLLO DELLA PRIMA PARTITA",
+                   title: "GIORNO 0 · CALIBRAZIONE",
+                   steps: [
+                       ["PRIMA DI SOPRAVVIVERE", "Questo è un giorno di calibrazione sicuro. Prova i comandi senza pressione né eventi: la partita vera inizierà al giorno 1."],
+                       ["LEGGI LE TRE RISERVE", "L'ossigeno ti mantiene in vita, la sanità misura la tua stabilità e l'integrità tiene in piedi la stazione. Le barre possono superare temporaneamente il 100%."],
+                       ["SPENDI L'ENERGIA CON ATTENZIONE", "Tutte le dieci azioni costano ENE. Le riparazioni ristabiliscono le riserve; esplorare rivela moduli e zone; registri, osservazione e ispezione scoprono informazioni e oggetti."],
+                       ["ECHO-9 E LA FINE DEL TUTORIAL", "ECHO-9 può consigliarti, ma anche mentire. Moduli e oggetti appaiono nei pannelli laterali. Quando sei pronto, premi PASSA 24 ORE: il giorno 0 si resetta e inizia la partita vera."]
+                   ],
+                   next: "CONTINUA",
+                   start: "INIZIA IL GIORNO 0"
+               },
+               de: {
+                   kicker: "PROTOKOLL FÜR DEN ERSTEN DURCHLAUF",
+                   title: "TAG 0 · KALIBRIERUNG",
+                   steps: [
+                       ["BEVOR DU ÜBERLEBST", "Dies ist ein sicherer Kalibrierungstag. Teste die Steuerung ohne Druck oder Ereignisse: Am Tag 1 beginnt das echte Spiel."],
+                       ["LIES DIE DREI RESERVEN", "Sauerstoff hält dich am Leben, Verstand misst deine Stabilität und Integrität hält die Station aufrecht. Die Balken können vorübergehend über 100 % steigen."],
+                       ["GIB ENERGIE MIT BEDACHT AUS", "Alle zehn Aktionen kosten ENE. Reparaturen stellen Reserven wieder her; Erkunden enthüllt Module und Zonen; Aufzeichnungen, Beobachtung und Untersuchung liefern Informationen und Gegenstände."],
+                       ["ECHO-9 UND DAS ENDE DES TUTORIALS", "ECHO-9 kann dich beraten, aber auch lügen. Module und Gegenstände erscheinen in den Seitenfeldern. Wenn du bereit bist, drücke 24 H ÜBERSPRINGEN: Tag 0 wird zurückgesetzt und dein echter Durchlauf beginnt."]
+                   ],
+                   next: "WEITER",
+                   start: "TAG 0 STARTEN"
+               }
+           };
+
+           function getTutorialCopy() {
+               return tutorialCopy[currentLanguage] || tutorialCopy.es;
+           }
+
+           function renderTutorialOverlay() {
+               if (!state.tutorialActive) return;
+               const copy = getTutorialCopy();
+               const stepIndex = Math.min(state.tutorialStep, copy.steps.length - 1);
+               const step = copy.steps[stepIndex];
+               document.getElementById('tutorial-kicker').innerText = copy.kicker;
+               document.getElementById('tutorial-title').innerText = copy.title;
+               document.getElementById('tutorial-step-title').innerText = step[0];
+               document.getElementById('tutorial-text').innerText = step[1];
+               document.getElementById('tutorial-progress').innerText =
+                   `${stepIndex + 1} / ${copy.steps.length}`;
+               document.getElementById('tutorial-next').innerText =
+                   stepIndex === copy.steps.length - 1 ? copy.start : copy.next;
+               document.getElementById('tutorial-overlay').classList.remove('hidden');
+               document.getElementById('tutorial-overlay').classList.add('flex');
+           }
+
+           function hideTutorialOverlay() {
+               document.getElementById('tutorial-overlay').classList.add('hidden');
+               document.getElementById('tutorial-overlay').classList.remove('flex');
+           }
+
+           function advanceTutorial() {
+               if (!state.tutorialActive) return;
+               const copy = getTutorialCopy();
+               if (state.tutorialStep < copy.steps.length - 1) {
+                   state.tutorialStep++;
+                   renderTutorialOverlay();
+                   return;
+               }
+               hideTutorialOverlay();
+               document.getElementById('event-display').innerHTML = `
+                   <p class="text-yellow-400 animate-pulse mb-2">>> ${copy.title}</p>
+                   <p class="text-xl">${copy.steps[3][1]}</p>
+               `;
+               updateUI();
+           }
+
+           function finishTutorialDay() {
+               const selectedModes = Array.isArray(state.modes) ? [...state.modes] : [];
+               state = createInitialState();
+               state.gameStarted = true;
+               state.modes = selectedModes;
+               state.tutorialActive = false;
+               metaProgress.tutorialCompleted = true;
+               saveMetaProgress();
+               hideTutorialOverlay();
+               document.getElementById('event-display').innerHTML = `
+                   <p class="text-white mb-2">${tr("initial-transmission")}</p>
+                   <p>${tr("initial-welcome")}</p>
+               `;
+               log("Calibración completada. El Mes de Hierro comienza ahora: día 1.", "#66ccff");
+               startAmbientAudio();
+               renderEchoMessage();
+               saveGame();
+               updateUI();
+           }
+
+            const shareCopy = {
+                es: {
+                    label: "INFORME PARA COMPARTIR",
+                    copy: "COPIAR INFORME",
+                    copied: "INFORME COPIADO",
+                    copyError: "SELECCIONA Y COPIA EL TEXTO",
+                    report: "ESTACIÓN ÍCARO · INFORME DE SUPERVIVENCIA",
+                    result: "RESULTADO",
+                    day: "DÍA",
+                    resources: "RESERVAS",
+                    actions: "ACCIONES",
+                    modules: "MÓDULOS ACTIVOS",
+                    recordings: "GRABACIONES",
+                    clues: "PISTAS",
+                    achievements: "LOGROS",
+                    secrets: "SECRETOS",
+                    modes: "MODOS",
+                    none: "NINGUNO"
+                },
+                en: {
+                    label: "SHAREABLE REPORT",
+                    copy: "COPY REPORT",
+                    copied: "REPORT COPIED",
+                    copyError: "SELECT AND COPY THE TEXT",
+                    report: "ICARUS STATION · SURVIVAL REPORT",
+                    result: "RESULT",
+                    day: "DAY",
+                    resources: "RESERVES",
+                    actions: "ACTIONS",
+                    modules: "ACTIVE MODULES",
+                    recordings: "RECORDINGS",
+                    clues: "CLUES",
+                    achievements: "ACHIEVEMENTS",
+                    secrets: "SECRETS",
+                    modes: "MODES",
+                    none: "NONE"
+                },
+                fr: {
+                    label: "RAPPORT À PARTAGER",
+                    copy: "COPIER LE RAPPORT",
+                    copied: "RAPPORT COPIÉ",
+                    copyError: "SÉLECTIONNEZ ET COPIEZ LE TEXTE",
+                    report: "STATION ICARUS · RAPPORT DE SURVIE",
+                    result: "RÉSULTAT",
+                    day: "JOUR",
+                    resources: "RÉSERVES",
+                    actions: "ACTIONS",
+                    modules: "MODULES ACTIFS",
+                    recordings: "ENREGISTREMENTS",
+                    clues: "INDICES",
+                    achievements: "SUCCÈS",
+                    secrets: "SECRETS",
+                    modes: "MODES",
+                    none: "AUCUN"
+                },
+                it: {
+                    label: "RAPPORTO DA CONDIVIDERE",
+                    copy: "COPIA RAPPORTO",
+                    copied: "RAPPORTO COPIATO",
+                    copyError: "SELEZIONA E COPIA IL TESTO",
+                    report: "STAZIONE ICARO · RAPPORTO DI SOPRAVVIVENZA",
+                    result: "RISULTATO",
+                    day: "GIORNO",
+                    resources: "RISERVE",
+                    actions: "AZIONI",
+                    modules: "MODULI ATTIVI",
+                    recordings: "REGISTRAZIONI",
+                    clues: "INDIZI",
+                    achievements: "TRAGUARDI",
+                    secrets: "SEGRETI",
+                    modes: "MODALITÀ",
+                    none: "NESSUNO"
+                },
+                de: {
+                    label: "TEILBARER BERICHT",
+                    copy: "BERICHT KOPIEREN",
+                    copied: "BERICHT KOPIERT",
+                    copyError: "TEXT AUSWÄHLEN UND KOPIEREN",
+                    report: "STATION IKARUS · ÜBERLEBENSBERICHT",
+                    result: "ERGEBNIS",
+                    day: "TAG",
+                    resources: "RESERVEN",
+                    actions: "AKTIONEN",
+                    modules: "AKTIVE MODULE",
+                    recordings: "AUFNAHMEN",
+                    clues: "HINWEISE",
+                    achievements: "ERFOLGE",
+                    secrets: "GEHEIMNISSE",
+                    modes: "MODI",
+                    none: "KEINE"
+                }
+            };
+
+            function getShareCopy() {
+                return shareCopy[currentLanguage] || shareCopy.es;
+            }
+
+            function buildShareSummary(win, death) {
+                const copy = getShareCopy();
+                const ending = win ? getEndingPresentation() : null;
+                const result = win ? ending.title : death.title;
+                const totalActions = Object.values(state.runActionCounts || {})
+                    .reduce((total, count) => total + (Number(count) || 0), 0);
+                const activeModules = Object.values(state.modules || {})
+                    .filter(Boolean).length;
+                const modes = Array.isArray(state.modes) && state.modes.length
+                    ? state.modes.map(mode => mode.toUpperCase()).join(", ")
+                    : copy.none;
+
+                return [
+                    copy.report,
+                    "━━━━━━━━━━━━━━━━━━━━",
+                    `${copy.result}: ${result}`,
+                    `${copy.day}: ${state.day}`,
+                    `${copy.resources}: O₂ ${Math.ceil(state.oxygen)} · ${tr("label-sanity")} ${Math.ceil(state.sanity)} · ${tr("label-integrity")} ${Math.ceil(state.integrity)}%`,
+                    `${copy.actions}: ${totalActions}`,
+                    `${copy.modules}: ${activeModules}`,
+                    `${copy.recordings}: ${state.recordings.length}`,
+                    `${copy.clues}: ${state.clues.length}`,
+                    `${copy.achievements}: ${state.achievements.length}`,
+                    `${copy.secrets}: ${state.secrets.length}`,
+                    `${copy.modes}: ${modes}`,
+                    "",
+                    "#EstacionIcaro #MesDeHierro"
+                ].join("\n");
+            }
+
+            function renderShareSummary(win, death) {
+                const copy = getShareCopy();
+                const panel = document.getElementById('share-panel');
+                const textarea = document.getElementById('share-summary');
+                const copyButton = document.getElementById('share-copy-button');
+                const status = document.getElementById('share-copy-status');
+                document.getElementById('share-label').innerText = copy.label;
+                copyButton.innerText = copy.copy;
+                status.innerText = "";
+                textarea.value = buildShareSummary(win, death);
+                panel.classList.remove('hidden');
+            }
+
+            async function copyShareSummary() {
+                const copy = getShareCopy();
+                const textarea = document.getElementById('share-summary');
+                const status = document.getElementById('share-copy-status');
+                try {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(textarea.value);
+                    } else {
+                        textarea.focus();
+                        textarea.select();
+                        if (!document.execCommand('copy')) throw new Error("copy-failed");
+                    }
+                    status.innerText = copy.copied;
+                } catch {
+                    textarea.focus();
+                    textarea.select();
+                    status.innerText = copy.copyError;
+                }
+            }
 
          function applyLanguage() {
              document.documentElement.lang = languageData[currentLanguage].lang;
@@ -3230,6 +3607,7 @@
              updateSoundToggle();
              renderMetaProgress();
              if (state.gameStarted) updateUI();
+              if (state.tutorialActive) renderTutorialOverlay();
          }
 
          function selectLanguage(language) {
@@ -3414,7 +3792,8 @@
              updateSoundToggle();
          }
 
-        let state = {
+        function createInitialState() {
+            return {
             day: 1,
              energy: DAILY_ENERGY,
             oxygen: 90,
@@ -3422,6 +3801,8 @@
             integrity: 100,
             isGameOver: false,
             gameStarted: false,
+            tutorialActive: false,
+            tutorialStep: 0,
             pendingEvent: null,
             pendingExploration: false,
              pendingZoneEvent: null,
@@ -3471,7 +3852,10 @@
             clues: [],
               achievements: [],
               secrets: []
-        };
+            };
+        }
+
+        let state = createInitialState();
 
          let metaProgress = loadMetaProgress();
 
@@ -4590,6 +4974,10 @@
          };
 
          function normalizeState() {
+              state.tutorialActive = Boolean(state.tutorialActive);
+              state.tutorialStep = Number.isInteger(state.tutorialStep)
+                  ? Math.max(0, state.tutorialStep)
+                  : 0;
              state.pendingFinalChoice = Boolean(state.pendingFinalChoice);
              state.pendingZoneEvent = state.pendingZoneEvent || null;
              state.echoExposure = state.echoExposure || 0;
@@ -4940,12 +5328,18 @@
             document.getElementById('game-ui').classList.remove('hidden');
             state.modes = metaProgress.customModesUnlocked ? getSelectedModes() : [];
             if (isModeActive("echo")) state.echoTrust = 70;
+            if (!metaProgress.tutorialCompleted) {
+                state.day = 0;
+                state.tutorialActive = true;
+                state.tutorialStep = 0;
+            }
             state.gameStarted = true;
             state.isGameOver = false;
              startAmbientAudio();
              normalizeState();
             saveGame();
             updateUI();
+            if (state.tutorialActive) renderTutorialOverlay();
             if (metaProgress.deaths >= 3) {
                 const iterationMessage = ntr("Ya hemos hecho esto antes. Contando esta, van {count} veces.")
                     .replace("{count}", metaProgress.deaths + 1);
@@ -4970,6 +5364,7 @@
                  else if (state.pendingFinalChoice) showFinalChoices();
                 else renderEchoMessage();
                 updateUI();
+                if (state.tutorialActive) renderTutorialOverlay();
             } catch {
                 localStorage.removeItem(SAVE_KEY);
                 startGame();
@@ -4983,7 +5378,7 @@
         }
 
         function getActionCost(type) {
-            const scaling = Math.floor((state.day - 1) / 10);
+            const scaling = Math.max(0, Math.floor((state.day - 1) / 10));
             const baseCost = (type === 'repair' || type === 'scavenge')
                 ? ACTION_COSTS[type] + scaling
                 : ACTION_COSTS[type];
@@ -5114,8 +5509,9 @@
               document.getElementById('observe-cost').innerText = `(-${getActionCost('observe')} ${tr("energy-unit")})`;
               document.getElementById('inspect-cost').innerText = `(-${getActionCost('inspect')} ${tr("energy-unit")})`;
               document.getElementById('manipulate-cost').innerText = `(-${getActionCost('manipulate')} ${tr("energy-unit")})`;
-            document.getElementById('forecast').innerText =
-                 `${tr("forecast")}: ${tr("forecast-oxygen")} -${perceivedPressure} · ${tr("forecast-sanity")} -${getDailyPressure()} · ${tr("forecast-tomorrow")}: ${Math.round(getEventChance(state.day + 1) * 100)}% · ${tr("forecast-energy")}: ${getNextDayEnergy()}/${energyCapacity} · ${tr("forecast-stress")}: ${state.stationStress}/4`;
+            document.getElementById('forecast').innerText = state.tutorialActive
+                 ? getTutorialCopy().title + ": " + getTutorialCopy().steps[0][1]
+                 : `${tr("forecast")}: ${tr("forecast-oxygen")} -${perceivedPressure} · ${tr("forecast-sanity")} -${getDailyPressure()} · ${tr("forecast-tomorrow")}: ${Math.round(getEventChance(state.day + 1) * 100)}% · ${tr("forecast-energy")}: ${getNextDayEnergy()}/${energyCapacity} · ${tr("forecast-stress")}: ${state.stationStress}/4`;
 
             const actionButtons = document.querySelectorAll('#game-ui button[onclick^="performAction"]');
             actionButtons.forEach(button => {
@@ -5957,6 +6353,10 @@
                 log("Primero debes decidir qué hacer con el incidente activo.", "#ffcc33");
                 return;
             }
+             if (state.tutorialActive) {
+                 finishTutorialDay();
+                 return;
+             }
 
             if (state.repairWear > 0) {
                 const wearLoss = state.repairWear * 2;
@@ -6388,6 +6788,7 @@
                  restart.innerText = tr("restart-death");
                  body.innerText = death.text;
             }
+             renderShareSummary(win, death);
         }
 
         function checkSavedGame() {
@@ -6395,7 +6796,7 @@
             try {
                 const saved = localStorage.getItem(SAVE_KEY);
                 const parsed = saved ? JSON.parse(saved) : null;
-                if (parsed && parsed.day && !(parsed.modes || []).includes("iron-pure")) {
+                if (parsed && Number.isFinite(Number(parsed.day)) && !(parsed.modes || []).includes("iron-pure")) {
                     document.getElementById('continue-btn').classList.remove('hidden');
                 }
             } catch {
