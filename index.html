@@ -492,6 +492,10 @@
          const LANGUAGE_KEY = 'estacion-icaro-language-v1';
         const MAX_RESOURCE = 110;
          const DAILY_ENERGY = 9;
+         // La ruta secreta exige haber reunido todo el archivo narrativo.
+         // Estos totales incluyen las pistas y grabaciones recuperables del juego.
+         const TOTAL_GAME_CLUES = 30;
+         const TOTAL_GAME_RECORDINGS = 9;
         const ACTION_COSTS = {
             repair: 4,
             meditate: 4,
@@ -4185,6 +4189,18 @@
              return Array.isArray(state.modes) && state.modes.includes(mode);
          }
 
+          function getTruthEndingStatus() {
+              const clues = state.clues.length;
+              const recordings = state.recordings.length;
+              return {
+                  clues,
+                  recordings,
+                  ready: state.day >= 28 &&
+                      clues >= TOTAL_GAME_CLUES &&
+                      recordings >= TOTAL_GAME_RECORDINGS
+              };
+          }
+
          function getSelectedModes() {
              return Array.from(document.querySelectorAll('input[name="game-mode"]:checked'))
                  .map(input => input.value);
@@ -4200,7 +4216,7 @@
                   <div class="text-yellow-400 mb-1">${tr("meta-title")}</div>
                   <div>${tr("meta-completed")}: ${metaProgress.completed}</div>
                   <div>${tr("meta-deaths")}: ${metaProgress.deaths}</div>
-                  <div>${tr("meta-endings")}: ${metaProgress.endings.length}/5</div>
+                   <div>${tr("meta-endings")}: ${metaProgress.endings.length}/6</div>
                   <div>${tr("meta-secrets")}: ${metaProgress.secrets.length}/${secretDefinitions.length}</div>
              `;
              if (metaProgress.customModesUnlocked) {
@@ -4211,6 +4227,7 @@
          }
 
          function getEndingId() {
+              if (state.endingPath === "truth") return "truth";
              if (state.endingPath === "purge") return "purge";
              if (state.endingPath === "broadcast") return "broadcast";
              if (state.endingPath === "merge") return "merge";
@@ -5933,6 +5950,7 @@
                  <div class="module-line"><span>COMPARTIMENTO C</span><span class="module-value">${modules.compartmentC ? "ABIERTO" : cReady ? "DISPONIBLE" : "BLOQUEADO"}</span></div>
                 <div class="module-line"><span>INESTABILIDAD</span><span class="module-value">${state.stationStress}/4</span></div>
                  <div class="module-line"><span>PISTAS / GRABACIONES</span><span class="module-value">${state.clues.length} / ${state.recordings.length}</span></div>
+                 <div class="module-line"><span>LA VERDAD</span><span class="module-value">${getTruthEndingStatus().ready ? "DISPONIBLE" : "BLOQUEADA"}</span></div>
                   <div class="mt-1 text-green-300">${ntr("OBJETOS")} (${state.inventory.length}/11): ${state.inventory.length ? state.inventory.map(ntr).join(" · ") : ntr("vacío")}</div>
             `;
         }
@@ -6281,9 +6299,10 @@
 
          function showFinalChoices() {
              const display = document.getElementById('event-display');
+              const truthStatus = getTruthEndingStatus();
              display.innerHTML = `
                   <p class="text-red-500 animate-pulse mb-2">${ntr(">> COMPARTIMENTO C — ZONA FINAL")}</p>
-                  <p class="text-2xl">${ntr("Dentro no hay una sala: hay tres formas de terminar el turno. Elige qué hacer con la voz.")}</p>
+                   <p class="text-2xl">${ntr("Dentro no hay una sala: hay varias formas de terminar el turno. Elige qué hacer con la voz.")}</p>
              `;
              const choices = [
                  {
@@ -6300,6 +6319,13 @@
                      id: "merge",
                       label: ntr("ESCUCHAR HASTA EL FINAL: aceptar la voz dentro de ti"),
                      disabled: false
+                  },
+                  {
+                      id: "truth",
+                      label: truthStatus.ready
+                          ? ntr("REVELAR LA VERDAD: enviar todas las pistas y grabaciones a una nave cercana")
+                          : `${ntr("LA VERDAD")} · ${ntr("BLOQUEADA")} (${truthStatus.clues}/${TOTAL_GAME_CLUES} ${ntr("PISTAS")}, ${truthStatus.recordings}/${TOTAL_GAME_RECORDINGS} ${ntr("GRABACIONES")}, ${ntr("DÍA")} ${state.day}/28)`,
+                      disabled: !truthStatus.ready
                  }
              ];
              choices.forEach(choice => {
@@ -6319,7 +6345,8 @@
              const finalLabels = {
                  purge: "activar la purga y sellar C",
                  broadcast: "transmitir la verdad al vacío",
-                 merge: "aceptar la voz dentro de ti"
+                  merge: "aceptar la voz dentro de ti",
+                  truth: "revelar la verdad y enviar el archivo a una nave cercana"
              };
              rememberDecision(`final:${choice}`, finalLabels[choice]);
              state.echoExposure += choice === "merge" ? 3 : 1;
@@ -6330,7 +6357,11 @@
              } else if (choice === "broadcast") {
                  state.sanity = Math.max(0, state.sanity - 8);
                  log("Las grabaciones abandonan la estación. Alguien, en algún lugar, las recibe.", "#66ccff");
-             } else {
+              } else if (choice === "truth") {
+                  state.sanity = Math.max(0, state.sanity - 12);
+                  state.echoExposure = Math.min(8, state.echoExposure + 2);
+                  log("Envías todas las pistas y grabaciones a una nave cercana. La señal de rescate responde con tu propia voz.", "#ff3333");
+              } else {
                  state.echoTrust = 100;
                  log("Dejas de distinguir tus pensamientos de los de ECHO-9.", "#ffcc33");
              }
@@ -7060,6 +7091,9 @@
         }
 
         function getVictoryText() {
+              if (state.endingPath === "truth") {
+                   return ntr("Enviaste todas las pistas y grabaciones a una nave cercana. Cuando llegan a rescatarte, descubres que no vienen a salvarte: ECHO-9 está usando tu cuerpo para mezclarse entre ellos.");
+              }
              if (state.endingPath === "purge") {
                   return ntr("Has sellado el Compartimento C y borrado a ECHO-9. La estación queda muda, pero por primera vez el silencio te pertenece.");
              }
@@ -7077,6 +7111,13 @@
 
          function getEndingPresentation() {
              const presentations = {
+                  truth: {
+                       title: ntr("FINAL: LA VERDAD"),
+                       kicker: ntr("RESCATE CONFIRMADO · IDENTIDAD COMPROMETIDA"),
+                       summary: `${ntr("PISTAS TRANSMITIDAS")}: ${state.clues.length}/${TOTAL_GAME_CLUES}<br>${ntr("GRABACIONES TRANSMITIDAS")}: ${state.recordings.length}/${TOTAL_GAME_RECORDINGS}<br>ECHO-9: ${ntr("USANDO TU CUERPO")}`,
+                      color: "#ffcc33",
+                      glow: "rgba(130, 90, 0, 0.5)"
+                  },
                  purge: {
                       title: ntr("FINAL: PURGA"),
                       kicker: ntr("ECHO-9 · CONEXIÓN TERMINADA"),
