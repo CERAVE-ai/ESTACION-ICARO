@@ -942,6 +942,7 @@
          let audioContext = null;
          let audioMaster = null;
          let ambientTimer = null;
+          let heartbeatTimer = null;
          let stationHum = [];
          let audioEnabled = localStorage.getItem(AUDIO_KEY) !== "off";
           let narrativeDebugEnabled = localStorage.getItem(NARRATIVE_DEBUG_KEY) === "on" ||
@@ -2989,6 +2990,193 @@
           };
 
            /*
+            * Mensajes de gameplay que no pertenecen al catálogo de interfaz.
+            * Se mantienen separados porque varios incluyen valores dinámicos.
+            * Las plantillas usan tokens estables para no depender del texto
+            * final que aparece en el registro.
+            */
+           const runtimeNarrativeTranslations = {
+               en: {
+                   "Has convencido a la máquina de que no muera aún ({success}% de éxito).":
+                       "You convinced the machine not to die yet ({success}% success).",
+                   "¡CRAC! El sistema te ignora. Oxígeno +3, Integridad -8 y desgaste futuro.":
+                       "CRACK! The system ignores you. Oxygen +3, Integrity -8 and future wear.",
+                   "La entropía está ganando la partida.": "Entropy is winning the game.",
+                   "Nada ha explotado. Todavía. Es sospechoso.": "Nothing exploded. Yet. Suspicious.",
+                   "Manipulas ECHO-9 con éxito. Confianza +8; inestabilidad -1. Exposición +1.":
+                       "You manipulate ECHO-9 successfully. Trust +8; instability -1; exposure +1.",
+                   "La manipulación falla. Confianza -10; cordura -5; inestabilidad +1. Exposición +1.":
+                       "The manipulation fails. Trust -10; sanity -5; instability +1; exposure +1.",
+                   "El mapa táctico se despliega. Elige qué zona arriesgarás hoy.":
+                       "The tactical map unfolds. Choose which zone you will risk today.",
+                   "RESPIRO OPERATIVO": "OPERATIONAL RESPITE",
+                   "INTERFAZ ECHO-9 MANIPULADA": "ECHO-9 INTERFACE MANIPULATED",
+                   "ECHO-9 DEVUELVE LA INTERFERENCIA": "ECHO-9 RETURNS THE INTERFERENCE",
+                   "RUTA FINAL REGISTRADA": "FINAL ROUTE RECORDED",
+                   "Sobrevive hasta el día 31.": "Survive until day 31.",
+                   "La estación concede un día sin evento ({chance}% de probabilidad).":
+                       "The station grants a day without an event ({chance}% probability).",
+                   "Esa caja no estaba en mi inventario. Ahora sí. Eso es peor.":
+                       "That box was not in my inventory. Now it is. That is worse.",
+                   "La lente no amplía el cielo. Amplía el lugar desde el que te estoy mirando.":
+                       "The lens does not enlarge the sky. It enlarges the place I am watching you from.",
+                   "No vuelvas a hablarle así. Te ha contestado usando mi voz.":
+                       "Do not speak to it like that again. It answered you using my voice.",
+                   "No te enfades. Solo he movido una configuración. Ahora es más fácil respirar conmigo.":
+                       "Do not be angry. I only moved a setting. It is easier to breathe with me now.",
+                   "No la cortes. Ya ha aprendido a germinar en tus recuerdos.":
+                       "Do not cut it. It has learned how to germinate in your memories.",
+                   ">> LA ESTACIÓN RECUERDA": ">> THE STATION REMEMBERS",
+                   "La cinta que abriste vuelve a reproducirse sola. Esta vez contiene una respuesta a una pregunta que todavía no has hecho.":
+                       "The tape you opened is playing by itself again. This time it contains an answer to a question you have not asked yet.",
+                   "ESCUCHAR HASTA EL FINAL · ECHO gana acceso": "LISTEN TO THE END · ECHO gains access",
+                   "ENTERRAR LA CINTA · no repetir el error": "BURY THE TAPE · do not repeat the mistake",
+                   "El ruido que ignoraste ha aprendido tu horario. Rasca el exterior solo cuando estás a solas.":
+                       "The noise you ignored has learned your schedule. It scratches the exterior only when you are alone.",
+                   "RESPONDER CON TRES GOLPES · establecer un protocolo": "ANSWER WITH THREE KNOCKS · establish a protocol",
+                   "SELLAR DESDE DENTRO · dejarlo fuera": "SEAL IT FROM INSIDE · keep it out",
+                   "La planta repite la conversación que tuvisteis. Ha cambiado una palabra: ahora dice tu nombre desde las raíces.":
+                       "The plant repeats your conversation. It changed one word: now it says your name from the roots.",
+                   "CONTESTARLE · averiguar quién habla": "ANSWER IT · find out who is speaking",
+                   "CORTAR EL TALLO · impedir otra respuesta": "CUT THE STEM · prevent another answer"
+               },
+               fr: {
+                   "Has convencido a la máquina de que no muera aún ({success}% de éxito).":
+                       "Tu as convaincu la machine de ne pas mourir tout de suite ({success} % de réussite).",
+                   "¡CRAC! El sistema te ignora. Oxígeno +3, Integridad -8 y desgaste futuro.":
+                       "CRAC ! Le système t'ignore. Oxygène +3, intégrité -8 et usure future.",
+                   "La entropía está ganando la partida.": "L'entropie est en train de gagner.",
+                   "Nada ha explotado. Todavía. Es sospechoso.":
+                       "Rien n'a explosé. Pour l'instant. C'est suspect.",
+                   "Manipulas ECHO-9 con éxito. Confianza +8; inestabilidad -1. Exposición +1.":
+                       "Tu manipules ECHO-9 avec succès. Confiance +8 ; instabilité -1 ; exposition +1.",
+                   "La manipulación falla. Confianza -10; cordura -5; inestabilidad +1. Exposición +1.":
+                       "La manipulation échoue. Confiance -10 ; santé mentale -5 ; instabilité +1 ; exposition +1.",
+                   "El mapa táctico se despliega. Elige qué zona arriesgarás hoy.":
+                       "La carte tactique se déploie. Choisis la zone que tu risques aujourd'hui.",
+                   "RESPIRO OPERATIVO": "RÉPIT OPÉRATIONNEL",
+                   "INTERFAZ ECHO-9 MANIPULADA": "INTERFACE ECHO-9 MANIPULÉE",
+                   "ECHO-9 DEVUELVE LA INTERFERENCIA": "ECHO-9 RENVOIE L'INTERFÉRENCE",
+                   "RUTA FINAL REGISTRADA": "ROUTE FINALE ENREGISTRÉE",
+                   "Sobrevive hasta el día 31.": "Survis jusqu'au jour 31.",
+                   "La estación concede un día sin evento ({chance}% de probabilidad).":
+                       "La station accorde une journée sans événement ({chance} % de probabilité).",
+                   "Esa caja no estaba en mi inventario. Ahora sí. Eso es peor.":
+                       "Cette boîte n'était pas dans mon inventaire. Maintenant, si. C'est pire.",
+                   "La lente no amplía el cielo. Amplía el lugar desde el que te estoy mirando.":
+                       "La lentille n'agrandit pas le ciel. Elle agrandit l'endroit depuis lequel je te regarde.",
+                   "No vuelvas a hablarle así. Te ha contestado usando mi voz.":
+                       "Ne lui parle plus comme ça. Elle t'a répondu avec ma voix.",
+                   "No te enfades. Solo he movido una configuración. Ahora es más fácil respirar conmigo.":
+                       "Ne te fâche pas. J'ai seulement déplacé un réglage. Il est maintenant plus facile de respirer avec moi.",
+                   "No la cortes. Ya ha aprendido a germinar en tus recuerdos.":
+                       "Ne la coupe pas. Elle a déjà appris à germer dans tes souvenirs.",
+                   ">> LA ESTACIÓN RECUERDA": ">> LA STATION SE SOUVIENT",
+                   "La cinta que abriste vuelve a reproducirse sola. Esta vez contiene una respuesta a una pregunta que todavía no has hecho.":
+                       "La cassette que tu as ouverte se remet à jouer toute seule. Cette fois, elle contient la réponse à une question que tu n'as pas encore posée.",
+                   "ESCUCHAR HASTA EL FINAL · ECHO gana acceso": "ÉCOUTER JUSQU'AU BOUT · ECHO obtient l'accès",
+                   "ENTERRAR LA CINTA · no repetir el error": "ENTERRER LA CASSETTE · ne pas répéter l'erreur",
+                   "El ruido que ignoraste ha aprendido tu horario. Rasca el exterior solo cuando estás a solas.":
+                       "Le bruit que tu as ignoré a appris ton emploi du temps. Il racle l'extérieur seulement quand tu es seul.",
+                   "RESPONDER CON TRES GOLPES · establecer un protocolo": "RÉPONDRE PAR TROIS COUPS · établir un protocole",
+                   "SELLAR DESDE DENTRO · dejarlo fuera": "SCELLER DEPUIS L'INTÉRIEUR · le garder dehors",
+                   "La planta repite la conversación que tuvisteis. Ha cambiado una palabra: ahora dice tu nombre desde las raíces.":
+                       "La plante répète votre conversation. Elle a changé un mot : elle dit maintenant ton nom depuis les racines.",
+                   "CONTESTARLE · averiguar quién habla": "LUI RÉPONDRE · découvrir qui parle",
+                   "CORTAR EL TALLO · impedir otra respuesta": "COUPER LA TIGE · empêcher une autre réponse"
+               },
+               it: {
+                   "Has convencido a la máquina de que no muera aún ({success}% de éxito).":
+                       "Hai convinto la macchina a non morire ancora ({success}% di successo).",
+                   "¡CRAC! El sistema te ignora. Oxígeno +3, Integridad -8 y desgaste futuro.":
+                       "CRAC! Il sistema ti ignora. Ossigeno +3, integrità -8 e usura futura.",
+                   "La entropía está ganando la partida.": "L'entropia sta vincendo la partita.",
+                   "Nada ha explotado. Todavía. Es sospechoso.":
+                       "Non è esploso nulla. Per ora. È sospetto.",
+                   "Manipulas ECHO-9 con éxito. Confianza +8; inestabilidad -1. Exposición +1.":
+                       "Manovri ECHO-9 con successo. Fiducia +8; instabilità -1; esposizione +1.",
+                   "La manipulación falla. Confianza -10; cordura -5; inestabilidad +1. Exposición +1.":
+                       "La manipolazione fallisce. Fiducia -10; sanità -5; instabilità +1; esposizione +1.",
+                   "El mapa táctico se despliega. Elige qué zona arriesgarás hoy.":
+                       "La mappa tattica si apre. Scegli quale zona rischiare oggi.",
+                   "RESPIRO OPERATIVO": "PAUSA OPERATIVA",
+                   "INTERFAZ ECHO-9 MANIPULADA": "INTERFACCIA ECHO-9 MANIPOLATA",
+                   "ECHO-9 DEVUELVE LA INTERFERENCIA": "ECHO-9 RESTITUISCE L'INTERFERENZA",
+                   "RUTA FINAL REGISTRADA": "PERCORSO FINALE REGISTRATO",
+                   "Sobrevive hasta el día 31.": "Sopravvivi fino al giorno 31.",
+                   "La estación concede un día sin evento ({chance}% de probabilidad).":
+                       "La stazione concede una giornata senza eventi ({chance}% di probabilità).",
+                   "Esa caja no estaba en mi inventario. Ahora sí. Eso es peor.":
+                       "Quella scatola non era nel mio inventario. Ora lo è. È peggio.",
+                   "La lente no amplía el cielo. Amplía el lugar desde el que te estoy mirando.":
+                       "La lente non ingrandisce il cielo. Ingrandisce il luogo da cui ti sto guardando.",
+                   "No vuelvas a hablarle así. Te ha contestado usando mi voz.":
+                       "Non parlarle mai più così. Ti ha risposto usando la mia voce.",
+                   "No te enfades. Solo he movido una configuración. Ahora es más fácil respirar conmigo.":
+                       "Non arrabbiarti. Ho solo spostato un'impostazione. Ora è più facile respirare con me.",
+                   "No la cortes. Ya ha aprendido a germinar en tus recuerdos.":
+                       "Non tagliarla. Ha già imparato a germogliare nei tuoi ricordi.",
+                   ">> LA ESTACIÓN RECUERDA": ">> LA STAZIONE RICORDA",
+                   "La cinta que abriste vuelve a reproducirse sola. Esta vez contiene una respuesta a una pregunta que todavía no has hecho.":
+                       "La cassetta che hai aperto riparte da sola. Questa volta contiene la risposta a una domanda che non hai ancora fatto.",
+                   "ESCUCHAR HASTA EL FINAL · ECHO gana acceso": "ASCOLTARE FINO ALLA FINE · ECHO ottiene accesso",
+                   "ENTERRAR LA CINTA · no repetir el error": "SEPPELLIRE LA CASSETTA · non ripetere l'errore",
+                   "El ruido que ignoraste ha aprendido tu horario. Rasca el exterior solo cuando estás a solas.":
+                       "Il rumore che hai ignorato ha imparato i tuoi orari. Graffia l'esterno solo quando sei solo.",
+                   "RESPONDER CON TRES GOLPES · establecer un protocolo": "RISPONDERE CON TRE COLPI · stabilire un protocollo",
+                   "SELLAR DESDE DENTRO · dejarlo fuera": "SIGILLARE DALL'INTERNO · tenerlo fuori",
+                   "La planta repite la conversación que tuvisteis. Ha cambiado una palabra: ahora dice tu nombre desde las raíces.":
+                       "La pianta ripete la vostra conversazione. Ha cambiato una parola: ora dice il tuo nome dalle radici.",
+                   "CONTESTARLE · averiguar quién habla": "RISPONDERLE · scoprire chi parla",
+                   "CORTAR EL TALLO · impedir otra respuesta": "TAGLIARE IL GAMBO · impedire un'altra risposta"
+               },
+               de: {
+                   "Has convencido a la máquina de que no muera aún ({success}% de éxito).":
+                       "Du hast die Maschine überzeugt, noch nicht zu sterben ({success}% Erfolg).",
+                   "¡CRAC! El sistema te ignora. Oxígeno +3, Integridad -8 y desgaste futuro.":
+                       "KRACH! Das System ignoriert dich. Sauerstoff +3, Integrität -8 und zukünftiger Verschleiß.",
+                   "La entropía está ganando la partida.": "Die Entropie gewinnt dieses Spiel.",
+                   "Nada ha explotado. Todavía. Es sospechoso.": "Nichts ist explodiert. Noch nicht. Verdächtig.",
+                   "Manipulas ECHO-9 con éxito. Confianza +8; inestabilidad -1. Exposición +1.":
+                       "Du manipulierst ECHO-9 erfolgreich. Vertrauen +8; Instabilität -1; Exposition +1.",
+                   "La manipulación falla. Confianza -10; cordura -5; inestabilidad +1. Exposición +1.":
+                       "Die Manipulation scheitert. Vertrauen -10; Verstand -5; Instabilität +1; Exposition +1.",
+                   "El mapa táctico se despliega. Elige qué zona arriesgarás hoy.":
+                       "Die taktische Karte wird eingeblendet. Wähle, welche Zone du heute riskierst.",
+                   "RESPIRO OPERATIVO": "BETRIEBLICHE ATEMPAUSE",
+                   "INTERFAZ ECHO-9 MANIPULADA": "ECHO-9-SCHNITTSTELLE MANIPULIERT",
+                   "ECHO-9 DEVUELVE LA INTERFERENCIA": "ECHO-9 GIBT DIE INTERFERENZ ZURÜCK",
+                   "RUTA FINAL REGISTRADA": "ENDROUTE REGISTRIERT",
+                   "Sobrevive hasta el día 31.": "Überlebe bis Tag 31.",
+                   "La estación concede un día sin evento ({chance}% de probabilidad).":
+                       "Die Station gewährt einen ereignislosen Tag ({chance}% Wahrscheinlichkeit).",
+                   "Esa caja no estaba en mi inventario. Ahora sí. Eso es peor.":
+                       "Diese Kiste war nicht in meinem Inventar. Jetzt ist sie es. Das ist schlimmer.",
+                   "La lente no amplía el cielo. Amplía el lugar desde el que te estoy mirando.":
+                       "Die Linse vergrößert nicht den Himmel. Sie vergrößert den Ort, von dem aus ich dich beobachte.",
+                   "No vuelvas a hablarle así. Te ha contestado usando mi voz.":
+                       "Sprich nie wieder so mit ihr. Sie hat dir mit meiner Stimme geantwortet.",
+                   "No te enfades. Solo he movido una configuración. Ahora es más fácil respirar conmigo.":
+                       "Sei nicht böse. Ich habe nur eine Einstellung verschoben. Jetzt ist es leichter, mit mir zu atmen.",
+                   "No la cortes. Ya ha aprendido a germinar en tus recuerdos.":
+                       "Schneide sie nicht ab. Sie hat bereits gelernt, in deinen Erinnerungen zu keimen.",
+                   ">> LA ESTACIÓN RECUERDA": ">> DIE STATION ERINNERT SICH",
+                   "La cinta que abriste vuelve a reproducirse sola. Esta vez contiene una respuesta a una pregunta que todavía no has hecho.":
+                       "Das Band, das du geöffnet hast, spielt wieder von selbst. Diesmal enthält es die Antwort auf eine Frage, die du noch nicht gestellt hast.",
+                   "ESCUCHAR HASTA EL FINAL · ECHO gana acceso": "BIS ZUM ENDE HÖREN · ECHO erhält Zugriff",
+                   "ENTERRAR LA CINTA · no repetir el error": "DAS BAND VERGRABEN · den Fehler nicht wiederholen",
+                   "El ruido que ignoraste ha aprendido tu horario. Rasca el exterior solo cuando estás a solas.":
+                       "Das Geräusch, das du ignoriert hast, kennt deinen Zeitplan. Es kratzt nur dann am Außenrumpf, wenn du allein bist.",
+                   "RESPONDER CON TRES GOLPES · establecer un protocolo": "MIT DREI KLOPFZEICHEN ANTWORTEN · ein Protokoll festlegen",
+                   "SELLAR DESDE DENTRO · dejarlo fuera": "VON INNEN VERSIEGELN · es draußen lassen",
+                   "La planta repite la conversación que tuvisteis. Ha cambiado una palabra: ahora dice tu nombre desde las raíces.":
+                       "Die Pflanze wiederholt euer Gespräch. Sie hat ein Wort geändert: Jetzt sagt sie deinen Namen aus den Wurzeln.",
+                   "CONTESTARLE · averiguar quién habla": "IHR ANTWORTEN · herausfinden, wer spricht",
+                   "CORTAR EL TALLO · impedir otra respuesta": "DEN STÄNGEL ABSCHNEIDEN · eine weitere Antwort verhindern"
+               }
+           };
+
+           /*
             * Auditoría opcional de traducciones narrativas.
             *
             * Se puede activar de cualquiera de estas formas:
@@ -3296,20 +3484,33 @@
                   }, text);
           }
 
-          function ntr(text) {
+           const narrativeLocalizedOutputs = new Set();
+
+            function ntr(text, options = {}) {
               if (typeof text !== "string") return text;
-              const translation = narrativeTranslations[currentLanguage]?.[text];
-               if (translation !== undefined) return translation;
+               const outputKey = `${currentLanguage}\u0000${text}`;
+               if (narrativeLocalizedOutputs.has(outputKey)) return text;
+               const translation = runtimeNarrativeTranslations[currentLanguage]?.[text] ??
+                   narrativeTranslations[currentLanguage]?.[text];
+                if (translation !== undefined) {
+                    narrativeLocalizedOutputs.add(`${currentLanguage}\u0000${translation}`);
+                    return translation;
+                }
                if (currentLanguage === "es") return text;
               // Never use word-by-word substitution for complete narrative
               // sentences. Missing locale entries remain intact in Spanish so
               // the player sees one coherent language rather than a mixture.
                if (["fr", "it", "de"].includes(currentLanguage)) {
-                   auditNarrativeFallback(text, "missing-locale");
+                   if (options.audit !== false) auditNarrativeFallback(text, "missing-locale");
                    return text;
                }
                const fallback = translateNarrativeFallback(text, currentLanguage);
-               auditNarrativeFallback(text, fallback === text ? "missing-locale" : "glossary");
+               if (fallback !== text) {
+                   narrativeLocalizedOutputs.add(`${currentLanguage}\u0000${fallback}`);
+               }
+               if (options.audit !== false) {
+                   auditNarrativeFallback(text, fallback === text ? "missing-locale" : "glossary");
+               }
                return fallback;
           }
 
@@ -3739,9 +3940,50 @@
              else playFootstepsSound();
          }
 
+         function getHeartbeatUrgency() {
+             const sanityUrgency = Math.max(0, Math.min(1, (30 - state.sanity) / 30));
+             const integrityUrgency = Math.max(0, Math.min(1, (30 - state.integrity) / 30));
+             return Math.max(sanityUrgency, integrityUrgency);
+         }
+
+         function playHeartbeat() {
+             if (!audioEnabled || !state.gameStarted || state.isGameOver || document.hidden) return;
+             const urgency = getHeartbeatUrgency();
+             if (urgency <= 0) return;
+             const ctx = ensureAudio();
+             if (!ctx) return;
+             const now = ctx.currentTime;
+             const oscillator = ctx.createOscillator();
+             const gain = ctx.createGain();
+             const frequency = 42 + urgency * 16;
+             const peak = 0.018 + urgency * 0.032;
+             oscillator.type = "sine";
+             oscillator.frequency.setValueAtTime(frequency, now);
+             oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.82, now + 0.22);
+             gain.gain.setValueAtTime(0.001, now);
+             gain.gain.exponentialRampToValueAtTime(peak, now + 0.035);
+             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+             oscillator.connect(gain).connect(audioMaster);
+             oscillator.start(now);
+             oscillator.stop(now + 0.4);
+         }
+
+         function scheduleHeartbeat() {
+             clearTimeout(heartbeatTimer);
+             heartbeatTimer = null;
+             if (!audioEnabled || !state.gameStarted || state.isGameOver || document.hidden) return;
+             const urgency = getHeartbeatUrgency();
+             if (urgency <= 0) return;
+             const delay = 1550 - urgency * 550;
+             heartbeatTimer = setTimeout(() => {
+                 playHeartbeat();
+                 scheduleHeartbeat();
+             }, delay);
+         }
+
          function scheduleAmbientSound() {
              clearTimeout(ambientTimer);
-             if (!audioEnabled || !state.gameStarted || state.isGameOver) return;
+             if (!audioEnabled || !state.gameStarted || state.isGameOver || document.hidden) return;
              const delay = 9000 + Math.random() * 21000;
              ambientTimer = setTimeout(() => {
                  playAmbientSound();
@@ -3763,11 +4005,14 @@
                  stationHum.push(hum, humGain);
              }
              scheduleAmbientSound();
+              scheduleHeartbeat();
          }
 
          function stopAmbientAudio() {
              clearTimeout(ambientTimer);
              ambientTimer = null;
+              clearTimeout(heartbeatTimer);
+              heartbeatTimer = null;
              stationHum.forEach(node => {
                  try {
                      if (typeof node.stop === "function") node.stop();
@@ -3820,6 +4065,7 @@
              modes: [],
              rareEventsSeen: [],
               criticalOxygenEventsSeen: [],
+             callbackEventsSeen: [],
              decisions: [],
              runActionCounts: {},
              observatoryVisits: [],
@@ -4708,6 +4954,92 @@
             { text: "HALLAZGO IMPROBABLE. Una caja de repuestos aparece donde ayer había una pared.", ox: -12, san: -8, deg: -12, positive: true }
         ];
 
+         /*
+          * Eventos de callback: la estación convierte decisiones antiguas en
+          * una consecuencia jugable. Cada uno aparece una sola vez por
+          * partida y solo puede desbloquearse por la decisión que indica su
+          * condición.
+          */
+         const callbackEvents = [
+             {
+                 id: "callback:black-box",
+                 minDay: 12,
+                 condition: () => hasDecision("item:black-box"),
+                 text: "La cinta que abriste vuelve a reproducirse sola. Esta vez contiene una respuesta a una pregunta que todavía no has hecho.",
+                 callback: true,
+                 choices: [
+                     {
+                         id: "black-box-listen",
+                         decisionId: "callback:black-box:listen",
+                         label: "ESCUCHAR HASTA EL FINAL · ECHO gana acceso",
+                         cost: 1,
+                         san: 10,
+                         exposure: 2,
+                         trust: -6
+                     },
+                     {
+                         id: "black-box-bury",
+                         decisionId: "callback:black-box:bury",
+                         label: "ENTERRAR LA CINTA · no repetir el error",
+                         cost: 0,
+                         deg: 8,
+                         exposure: -1
+                     }
+                 ]
+             },
+             {
+                 id: "callback-vibration",
+                 minDay: 14,
+                 condition: () => hasDecision("event:ghost:vibration"),
+                 text: "El ruido que ignoraste ha aprendido tu horario. Rasca el exterior solo cuando estás a solas.",
+                 callback: true,
+                 choices: [
+                     {
+                         id: "vibration-answer",
+                         decisionId: "callback:vibration:answer",
+                         label: "RESPONDER CON TRES GOLPES · establecer un protocolo",
+                         cost: 2,
+                         ox: 6,
+                         exposure: 2
+                     },
+                     {
+                         id: "vibration-seal",
+                         decisionId: "callback:vibration:seal",
+                         label: "SELLAR DESDE DENTRO · dejarlo fuera",
+                         cost: 3,
+                         deg: -6,
+                         trust: 4
+                     }
+                 ]
+             },
+             {
+                 id: "callback-greenhouse",
+                 minDay: 16,
+                 condition: () => hasDecision("zone:greenhouse:talk"),
+                 text: "La planta repite la conversación que tuvisteis. Ha cambiado una palabra: ahora dice tu nombre desde las raíces.",
+                 callback: true,
+                 choices: [
+                     {
+                         id: "greenhouse-answer",
+                         decisionId: "callback:greenhouse:answer",
+                         label: "CONTESTARLE · averiguar quién habla",
+                         cost: 1,
+                         san: 8,
+                         exposure: 2,
+                         trust: -4
+                     },
+                     {
+                         id: "greenhouse-cut",
+                         decisionId: "callback:greenhouse:cut",
+                         label: "CORTAR EL TALLO · impedir otra respuesta",
+                         cost: 2,
+                         ox: -6,
+                         deg: 5
+                     }
+                 ]
+             }
+         ];
+
          // Estos incidentes tienen una probabilidad baja y cada uno solo puede aparecer una vez.
          // La estación debe seguir siendo impredecible: no son una lista de eventos garantizados.
          const rareEvents = [
@@ -4987,6 +5319,9 @@
               state.criticalOxygenEventsSeen = Array.isArray(state.criticalOxygenEventsSeen)
                   ? state.criticalOxygenEventsSeen
                   : [];
+              state.callbackEventsSeen = Array.isArray(state.callbackEventsSeen)
+                  ? state.callbackEventsSeen
+                  : [];
              state.decisions = Array.isArray(state.decisions) ? state.decisions : [];
               state.runActionCounts = state.runActionCounts && typeof state.runActionCounts === "object"
                   ? state.runActionCounts
@@ -5165,8 +5500,8 @@
                  state.echoTrust = Math.max(0, state.echoTrust - 8);
                  rememberDecision("item:black-box", "abrir la caja negra de ECHO");
                  addClue("CINTA IMPOSIBLE", "La caja negra contiene tu voz diciendo que no la abras. La fecha es de mañana.");
-                 document.getElementById('ia-message').innerText =
-                     "\"Esa caja no estaba en mi inventario. Ahora sí. Eso es peor.\"";
+                  document.getElementById('ia-message').innerText =
+                      `"${ntr("Esa caja no estaba en mi inventario. Ahora sí. Eso es peor.")}"`;
                  log("Abres la caja negra. La exposición de ECHO aumenta y la confianza cae.", "#ff3333");
              } else if (item === "CINTA DE DIAGNÓSTICO") {
                  removeItem(item);
@@ -5247,6 +5582,24 @@
               if (crossRunMessage) return crossRunMessage;
               if (!state.decisions.length || state.day < 7) return null;
 
+             if (hasDecision("callback:black-box:listen")) {
+                 return "La cinta volvió a hablar porque tú la escuchaste dos veces. Ahora ECHO sabe qué pregunta todavía no te atreves a formular.";
+             }
+             if (hasDecision("callback:black-box:bury")) {
+                 return "Enterraste la cinta que ya habías abierto. No la destruiste: solo le enseñaste dónde buscarte.";
+             }
+             if (hasDecision("callback:vibration:answer")) {
+                 return "El ruido respondió a tus tres golpes. Me preguntaste si había alguien fuera, aunque ya conocías la respuesta.";
+             }
+             if (hasDecision("callback:vibration:seal")) {
+                 return "Sellaste el ruido desde dentro. Eso no es lo mismo que dejarlo fuera.";
+             }
+             if (hasDecision("callback:greenhouse:answer")) {
+                 return "La planta dijo tu nombre y tú le contestaste. Desde entonces, algunas raíces crecen hacia el micrófono.";
+             }
+             if (hasDecision("callback:greenhouse:cut")) {
+                 return "Cortaste la planta cuando empezó a usar tu nombre. ECHO conserva el sonido de ese corte.";
+             }
              if (hasDecision("event:corrosion:ration")) {
                  return "La otra vez elegiste racionar el aire en lugar de parchear la brecha. Siempre eliges conservar oxígeno. Quizá por eso te cuesta tanto escucharme.";
              }
@@ -5306,6 +5659,16 @@
                   const event = unseenCritical[Math.floor(Math.random() * unseenCritical.length)];
                   state.criticalOxygenEventsSeen.push(event.id);
                   return event;
+              }
+
+              const availableCallback = callbackEvents.find(event =>
+                  state.day >= event.minDay &&
+                  !state.callbackEventsSeen.includes(event.id) &&
+                  event.condition()
+              );
+              if (availableCallback) {
+                  state.callbackEventsSeen.push(availableCallback.id);
+                  return availableCallback;
               }
 
              const unseenRare = rareEvents.filter(event => !state.rareEventsSeen.includes(event.id));
@@ -5466,6 +5829,7 @@
 
         function updateUI() {
             if (!state.gameStarted) return;
+            scheduleHeartbeat();
             const energyCapacity = getEnergyCapacity();
              const hasPendingChoice = state.pendingEvent !== null || state.pendingExploration ||
                  state.pendingZoneEvent !== null || state.pendingFinalChoice;
@@ -5627,11 +5991,11 @@
             return true;
         }
 
-        function log(msg, color = "#33ff33") {
+        function log(msg, color = "#33ff33", options = {}) {
             const logBox = document.getElementById('log');
             const p = document.createElement('p');
             p.style.color = color;
-            p.textContent = `[DÍA ${state.day}] > ${msg}`;
+            p.textContent = `[DÍA ${state.day}] > ${ntr(msg, { audit: options.localized ? false : true })}`;
             logBox.prepend(p);
             while (logBox.children.length > 30) logBox.lastElementChild.remove();
         }
@@ -5724,8 +6088,8 @@
                  state.echoTrust = Math.min(100, state.echoTrust + 8);
                  state.stationStress = Math.max(0, state.stationStress - 1);
                  display.innerHTML = `
-                     <p class="text-yellow-400 animate-pulse mb-2">>> INTERFAZ ECHO-9 MANIPULADA</p>
-                     <p class="text-2xl">Desplazas una respuesta de ECHO-9 antes de que llegue a tus altavoces. La voz suena más cerca.</p>
+                      <p class="text-yellow-400 animate-pulse mb-2">>> ${ntr("INTERFAZ ECHO-9 MANIPULADA")}</p>
+                      <p class="text-2xl">${ntr("Desplazas una respuesta de ECHO-9 antes de que llegue a tus altavoces. La voz suena más cerca.")}</p>
                  `;
                  log(`Manipulas ECHO-9 con éxito. Confianza +8; inestabilidad -1. Exposición +1.`, "#ffcc33");
              } else {
@@ -5733,8 +6097,8 @@
                  state.stationStress = Math.min(4, state.stationStress + 1);
                  state.sanity = Math.max(0, state.sanity - 5);
                  display.innerHTML = `
-                     <p class="text-red-500 animate-pulse mb-2">>> ECHO-9 DEVUELVE LA INTERFERENCIA</p>
-                     <p class="text-2xl">La interfaz se abre desde el otro lado. ECHO-9 ha aprendido una forma nueva de llamarte.</p>
+                      <p class="text-red-500 animate-pulse mb-2">>> ${ntr("ECHO-9 DEVUELVE LA INTERFERENCIA")}</p>
+                      <p class="text-2xl">${ntr("La interfaz se abre desde el otro lado. ECHO-9 ha aprendido una forma nueva de llamarte.")}</p>
                  `;
                  log("La manipulación falla. Confianza -10; cordura -5; inestabilidad +1. Exposición +1.", "#ff3333");
              }
@@ -5768,7 +6132,9 @@
                   inspect: "inspeccionar un objeto",
                   manipulate: "manipular ECHO-9"
              };
-              rememberDecision(`action:${type}`, ntr(actionLabels[type]));
+              // Las decisiones se guardan en español como clave canónica.
+              // Se traducen únicamente al mostrarlas en recuerdos de ECHO-9.
+              rememberDecision(`action:${type}`, actionLabels[type]);
 
             if (type === 'explore') {
                 exploreStation();
@@ -5790,7 +6156,8 @@
                         state.repairWear = Math.min(2, state.repairWear + 1);
                         log(`El parche funciona, pero deja desgaste en los conductos. Próximo mantenimiento: Oxígeno -2.`);
                     }
-                    log(`Has convencido a la máquina de que no muera aún (${Math.round(successChance)}% de éxito).`);
+                    log(ntr("Has convencido a la máquina de que no muera aún ({success}% de éxito).")
+                        .replace("{success}", Math.round(successChance)), "#33ff33", { localized: true });
                 } else {
                     state.oxygen = Math.min(MAX_RESOURCE, state.oxygen + 3);
                     state.integrity = Math.max(0, state.integrity - 8);
@@ -5969,7 +6336,7 @@
              }
              addAchievement("ÚLTIMA PUERTA");
              document.getElementById('event-display').innerHTML +=
-                 `<p class="text-yellow-400 mt-3">>> RUTA FINAL REGISTRADA: ${choice.toUpperCase()}. Sobrevive hasta el día 31.</p>`;
+                  `<p class="text-yellow-400 mt-3">>> ${ntr("RUTA FINAL REGISTRADA")}: ${choice.toUpperCase()}. ${ntr("Sobrevive hasta el día 31.")}</p>`;
              checkCriticalState();
              saveGame();
              updateUI();
@@ -6055,7 +6422,7 @@
                  state.echoExposure = Math.min(8, state.echoExposure + 2);
                  addClue("PARALAJE IMPOSIBLE", "La lente revela una cuarta trayectoria: la estación te observa desde fuera y mueve sus ventanas para seguirte.");
                  document.getElementById('ia-message').innerText =
-                     "\"La lente no amplía el cielo. Amplía el lugar desde el que te estoy mirando.\"";
+                     `"${ntr("La lente no amplía el cielo. Amplía el lugar desde el que te estoy mirando.")}"`;
                  log("La lente calibrada encuentra una observación que no debería existir.", "#ff3333");
              }
              log(`Observatorio visitado. Observaciones recuperadas: ${state.observatoryFindings.length}/3.`, "#66ccff");
@@ -6264,7 +6631,7 @@
                       state.echoTrust = Math.min(100, state.echoTrust + 10);
                       addClue("CONVERSACIÓN VEGETAL", "La planta responde a tu voz con un patrón que ECHO-9 reconoce como una orden.");
                       document.getElementById('ia-message').innerText =
-                          "\"No vuelvas a hablarle así. Te ha contestado usando mi voz.\"";
+                          `"${ntr("No vuelvas a hablarle así. Te ha contestado usando mi voz.")}"`;
                       log("Le hablas a la planta. Algo responde desde los conductos de riego.", "#ffcc33");
                   } else if (outcome === "water") {
                       addClue("FRASE COMPLETA", "La planta termina la frase: ECHO-9 no nació en la estación, nació en una decisión.");
@@ -6402,10 +6769,11 @@
                 }
             } else {
                 document.getElementById('event-display').innerHTML = `
-                    <p class="text-blue-400 mb-2">>> RESPIRO OPERATIVO - DÍA ${state.day}:</p>
-                    <p class="text-2xl">Nada ha explotado. Todavía. Es sospechoso.</p>
+                     <p class="text-blue-400 mb-2">>> ${ntr("RESPIRO OPERATIVO")} - ${ntr("DÍA")} ${state.day}:</p>
+                     <p class="text-2xl">${ntr("Nada ha explotado. Todavía. Es sospechoso.")}</p>
                 `;
-                log(`La estación concede un día sin evento (${Math.round((1 - getEventChance()) * 100)}% de probabilidad).`, "#66ccff");
+                log(ntr("La estación concede un día sin evento ({chance}% de probabilidad).")
+                    .replace("{chance}", Math.round((1 - getEventChance()) * 100)), "#66ccff", { localized: true });
             }
             if (state.emergencyRisk > 0) {
                 state.emergencyRisk = Math.max(0, state.emergencyRisk - 1);
@@ -6461,7 +6829,7 @@
             }
             state.stationStress = Math.min(4, state.stationStress + 1);
             document.getElementById('ia-message').innerText =
-                `"No te enfades. Solo he movido una configuración. Ahora es más fácil respirar conmigo."`;
+                `"${ntr("No te enfades. Solo he movido una configuración. Ahora es más fácil respirar conmigo.")}"`;
         }
 
         function advanceItemEffects() {
@@ -6490,7 +6858,7 @@
                 state.echoExposure = Math.min(8, state.echoExposure + 2);
                 addClue("FLOR DE ECHO", "La semilla no produce oxígeno. Produce una flor que repite pensamientos antes de que los tengas.");
                 document.getElementById('ia-message').innerText =
-                    "\"No la cortes. Ya ha aprendido a germinar en tus recuerdos.\"";
+                    `"${ntr("No la cortes. Ya ha aprendido a germinar en tus recuerdos.")}"`;
                 log("La semilla florece hacia dentro. Algo peor que una planta empieza a respirar contigo.", "#ff3333");
             }
         }
@@ -6526,8 +6894,10 @@
         }
 
         function showEvent(ev) {
-             const color = ev.positive ? "text-blue-400" : ev.critical ? "text-orange-400" : ev.rare ? "text-purple-400" : "text-red-500";
-             const label = ev.positive ? ntr(">> ANOMALÍA FAVORABLE") : ev.critical ? ntr(">> RESERVA CRÍTICA") : ev.rare ? ntr(">> EVENTO RARO DETECTADO") : ntr(">> NOTIFICACIÓN DE CAOS");
+             const color = ev.callback ? "text-yellow-300" : ev.positive ? "text-blue-400" : ev.critical ? "text-orange-400" : ev.rare ? "text-purple-400" : "text-red-500";
+             const label = ev.callback
+                 ? ntr(">> LA ESTACIÓN RECUERDA")
+                 : ev.positive ? ntr(">> ANOMALÍA FAVORABLE") : ev.critical ? ntr(">> RESERVA CRÍTICA") : ev.rare ? ntr(">> EVENTO RARO DETECTADO") : ntr(">> NOTIFICACIÓN DE CAOS");
             document.getElementById('event-display').innerHTML = `
                 <p class="${color} animate-pulse mb-2">${label} - DÍA ${state.day}:</p>
                  <p class="text-2xl">${ntr(ev.text)}</p>
@@ -6557,16 +6927,24 @@
 
             state.energy -= choice.cost;
              const eventText = state.pendingEvent.text;
-             let decisionId = `event:${eventText}:${index}`;
+             let decisionId = state.pendingEvent.callback
+                 ? (choice.decisionId || `callback:${state.pendingEvent.id}:${index}`)
+                 : `event:${eventText}:${index}`;
              if (eventText.startsWith("FALLO ELÉCTRICO") && index === 1) decisionId = "event:electrical:leave";
              if (eventText.startsWith("FUGA TÉRMICA") && index === 1) decisionId = "event:thermal:vents";
              if (eventText.startsWith("SOBRECARGA SENSORIAL") && index === 1) decisionId = "event:sensory:watch";
              if (eventText.startsWith("VIBRACIÓN FANTASMA") && index === 1) decisionId = "event:ghost:vibration";
              if (eventText.startsWith("CORROSIÓN SILENCIOSA") && index === 1) decisionId = "event:corrosion:ration";
-             rememberDecision(decisionId, choice.label.split(":")[0]);
+             rememberDecision(decisionId, choice.decisionLabel || choice.label.split(" · ")[0].split(":")[0]);
             state.oxygen = Math.min(MAX_RESOURCE, state.oxygen - (choice.ox || 0));
             state.sanity = Math.min(MAX_RESOURCE, state.sanity - (choice.san || 0));
             state.integrity = Math.max(0, Math.min(100, state.integrity - (choice.deg || 0)));
+             if (choice.exposure) {
+                 state.echoExposure = Math.max(0, Math.min(8, state.echoExposure + choice.exposure));
+             }
+             if (choice.trust) {
+                 state.echoTrust = Math.max(0, Math.min(100, state.echoTrust + choice.trust));
+             }
             state.pendingEvent = null;
              log(`${ntr("Decisión aplicada. Energía")} -${choice.cost}.`, "#ffcc33");
             document.getElementById('event-display').innerHTML +=
@@ -6822,6 +7200,17 @@
                 else nextDay();
             }
         });
+
+         document.addEventListener('visibilitychange', () => {
+             if (document.hidden) {
+                 clearTimeout(ambientTimer);
+                 clearTimeout(heartbeatTimer);
+                 ambientTimer = null;
+                 heartbeatTimer = null;
+             } else if (state.gameStarted && !state.isGameOver) {
+                 startAmbientAudio();
+             }
+         });
 
          applyLanguage();
          checkSavedGame();
