@@ -5950,7 +5950,7 @@
                  <div class="module-line"><span>COMPARTIMENTO C</span><span class="module-value">${modules.compartmentC ? "ABIERTO" : cReady ? "DISPONIBLE" : "BLOQUEADO"}</span></div>
                 <div class="module-line"><span>INESTABILIDAD</span><span class="module-value">${state.stationStress}/4</span></div>
                  <div class="module-line"><span>PISTAS / GRABACIONES</span><span class="module-value">${state.clues.length} / ${state.recordings.length}</span></div>
-                 <div class="module-line"><span>LA VERDAD</span><span class="module-value">${getTruthEndingStatus().ready ? "DISPONIBLE" : "BLOQUEADA"}</span></div>
+                 ${getTruthEndingStatus().ready ? '<div class="module-line"><span>LA VERDAD</span><span class="module-value">DISPONIBLE</span></div>' : ""}
                   <div class="mt-1 text-green-300">${ntr("OBJETOS")} (${state.inventory.length}/11): ${state.inventory.length ? state.inventory.map(ntr).join(" · ") : ntr("vacío")}</div>
             `;
         }
@@ -6320,14 +6320,14 @@
                       label: ntr("ESCUCHAR HASTA EL FINAL: aceptar la voz dentro de ti"),
                      disabled: false
                   },
-                  {
-                      id: "truth",
-                      label: truthStatus.ready
-                          ? ntr("REVELAR LA VERDAD: enviar todas las pistas y grabaciones a una nave cercana")
-                          : `${ntr("LA VERDAD")} · ${ntr("BLOQUEADA")} (${truthStatus.clues}/${TOTAL_GAME_CLUES} ${ntr("PISTAS")}, ${truthStatus.recordings}/${TOTAL_GAME_RECORDINGS} ${ntr("GRABACIONES")}, ${ntr("DÍA")} ${state.day}/28)`,
-                      disabled: !truthStatus.ready
-                 }
              ];
+              if (truthStatus.ready) {
+                  choices.push({
+                      id: "truth",
+                      label: ntr("REVELAR LA VERDAD: enviar todas las pistas y grabaciones a una nave cercana"),
+                      disabled: false
+                  });
+              }
              choices.forEach(choice => {
                  const button = document.createElement('button');
                  button.className = 'choice-btn';
