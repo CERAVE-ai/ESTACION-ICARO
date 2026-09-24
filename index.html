@@ -132,6 +132,68 @@
             animation: blink 0.5s infinite;
         }
 
+        body.impact-shake #game-ui,
+        body.impact-shake #modal {
+            animation: impact-shake 760ms cubic-bezier(.36, .07, .19, .97) both;
+            transform-origin: center;
+        }
+
+        body.impact-shake.impact-fatal #game-ui,
+        body.impact-shake.impact-fatal #modal {
+            animation-name: impact-shake-fatal;
+            animation-duration: 1050ms;
+        }
+
+        body.impact-glitch::after {
+            content: "";
+            position: fixed;
+            inset: -4px;
+            z-index: 150;
+            pointer-events: none;
+            opacity: 0;
+            background:
+                repeating-linear-gradient(0deg, transparent 0 8px, rgba(255, 30, 70, 0.15) 8px 10px),
+                linear-gradient(90deg, rgba(255, 0, 35, 0.16), transparent 38%, rgba(0, 220, 255, 0.14));
+            animation: impact-glitch 780ms steps(2, end) both;
+        }
+
+        body.impact-glitch.impact-fatal::after {
+            animation-name: impact-glitch-fatal;
+            animation-duration: 1050ms;
+        }
+
+        @keyframes impact-shake {
+            0%, 100% { transform: translate3d(0, 0, 0); }
+            12%, 36%, 60%, 84% { transform: translate3d(-4px, 2px, 0); }
+            24%, 48%, 72%, 92% { transform: translate3d(4px, -2px, 0); }
+        }
+
+        @keyframes impact-shake-fatal {
+            0%, 100% { transform: translate3d(0, 0, 0); }
+            8%, 28%, 48%, 68%, 88% { transform: translate3d(-7px, 3px, 0) skewX(-0.4deg); }
+            18%, 38%, 58%, 78% { transform: translate3d(7px, -3px, 0) skewX(0.4deg); }
+        }
+
+        @keyframes impact-glitch {
+            0%, 100% { opacity: 0; transform: translateX(0); }
+            12%, 35%, 62% { opacity: 0.9; transform: translateX(3px); }
+            20%, 48%, 76% { opacity: 0.35; transform: translateX(-3px); }
+        }
+
+        @keyframes impact-glitch-fatal {
+            0%, 100% { opacity: 0; transform: translateX(0); }
+            8%, 24%, 42%, 64%, 82% { opacity: 1; transform: translateX(5px); }
+            16%, 34%, 54%, 74%, 92% { opacity: 0.55; transform: translateX(-5px); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            body.impact-shake #game-ui,
+            body.impact-shake #modal,
+            body.impact-glitch::after {
+                animation: none !important;
+            }
+        }
+
         @keyframes blink {
             0%, 100% { opacity: 1; background: rgba(255, 0, 0, 0.2); }
             50% { opacity: 0.5; background: transparent; }
@@ -950,6 +1012,7 @@
          let audioMaster = null;
          let ambientTimer = null;
           let heartbeatTimer = null;
+          let impactResetTimer = null;
          let stationHum = [];
          let audioEnabled = localStorage.getItem(AUDIO_KEY) !== "off";
           let narrativeDebugEnabled = localStorage.getItem(NARRATIVE_DEBUG_KEY) === "on" ||
@@ -6012,6 +6075,28 @@
             return Math.max(2, Math.round(pressure));
         }
 
+         function isCatastrophicImpact(event = {}) {
+             const resourceDamage =
+                 Math.max(0, Number(event.ox) || 0) +
+                 Math.max(0, Number(event.san) || 0) +
+                 Math.max(0, Number(event.deg) || 0);
+             return Boolean(event.critical || event.catastrophic || resourceDamage >= 15);
+         }
+
+         function triggerImpact(isFatal = false) {
+             const body = document.body;
+             if (!body || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+             if (impactResetTimer) window.clearTimeout(impactResetTimer);
+             body.classList.remove("impact-shake", "impact-glitch", "impact-fatal");
+             void body.offsetWidth;
+             body.classList.add("impact-shake", "impact-glitch");
+             if (isFatal) body.classList.add("impact-fatal");
+             impactResetTimer = window.setTimeout(() => {
+                 body.classList.remove("impact-shake", "impact-glitch", "impact-fatal");
+                 impactResetTimer = null;
+             }, isFatal ? 1200 : 900);
+         }
+
          function addLingeringEffect(effect) {
              if (!effect || !effect.id || !effect.days) return;
              state.lingeringEffects = state.lingeringEffects.filter(active => active.id !== effect.id);
@@ -7188,6 +7273,7 @@
             state.oxygen = Math.min(MAX_RESOURCE, state.oxygen - (ev.ox || 0));
             state.sanity = Math.min(MAX_RESOURCE, state.sanity - (ev.san || 0));
             state.integrity = Math.max(0, Math.min(100, state.integrity - (ev.deg || 0)));
+             if (isCatastrophicImpact(ev)) triggerImpact();
              if (ev.id === "echo-shadow") {
                  state.echoExposure++;
                  state.echoTrust = Math.max(0, state.echoTrust - 4);
@@ -7270,6 +7356,7 @@
                  state.echoTrust = Math.max(0, Math.min(100, state.echoTrust + choice.trust));
              }
               if (choice.lingering) addLingeringEffect(choice.lingering);
+              if (isCatastrophicImpact(choice)) triggerImpact();
             state.pendingEvent = null;
               log(`${ntr("Decisión aplicada. Energía")} -${cost}.`, "#ffcc33");
             document.getElementById('event-display').innerHTML +=
@@ -7447,6 +7534,7 @@
 
          function endGame(text, win = false, deathCause = null) {
             if (state.isGameOver) return;
+             if (!win) triggerImpact(true);
             checkSecrets();
              const death = !win ? getDeathMessage(deathCause || "integrity") : null;
             registerRunResult(win);
