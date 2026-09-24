@@ -397,15 +397,15 @@
                      </button>
                       <button onclick="performAction('records')" class="terminal-btn w-full p-2 text-left text-sm">
                            <span id="action-records">[7] REVISAR REGISTROS</span> <span id="records-cost">(-1 ENE)</span>
-                           <div id="records-info" class="text-[10px] opacity-60">Lee una grabación recuperada · sin consumirla</div>
+                           <div id="records-info" class="text-[10px] opacity-60">Lee una grabación · +1 cordura · primera lectura: pista</div>
                       </button>
                       <button onclick="performAction('observe')" class="terminal-btn w-full p-2 text-left text-sm">
                            <span id="action-observe">[8] OBSERVAR EXTERIOR</span> <span id="observe-cost">(-1 ENE)</span>
-                           <div id="observe-info" class="text-[10px] opacity-60">Buscar una señal en el vacío</div>
+                           <div id="observe-info" class="text-[10px] opacity-60">+1 cordura · la primera observación descubre una pista</div>
                       </button>
                       <button onclick="performAction('inspect')" class="terminal-btn w-full p-2 text-left text-sm">
                            <span id="action-inspect">[9] INSPECCIONAR OBJETO</span> <span id="inspect-cost">(-1 ENE)</span>
-                           <div id="inspect-info" class="text-[10px] opacity-60">Examinar un objeto del inventario</div>
+                           <div id="inspect-info" class="text-[10px] opacity-60">+1 cordura · el primer objeto revela una pista</div>
                       </button>
                       <button onclick="performAction('manipulate')" class="terminal-btn w-full p-2 text-left text-sm">
                            <span id="action-manipulate">[10] MANIPULAR ECHO</span> <span id="manipulate-cost">(-2 ENE)</span>
@@ -414,6 +414,9 @@
                      <div id="station-status" class="module-panel">
                          CARGANDO MAPA DE LA ESTACIÓN...
                      </div>
+                      <div id="lingering-effects" class="module-panel">
+                          CARGANDO EFECTOS TEMPORALES...
+                      </div>
                       <div id="secret-status" class="module-panel">
                           CARGANDO REGISTRO DE SECRETOS...
                       </div>
@@ -494,7 +497,7 @@
          const DAILY_ENERGY = 9;
          // La ruta secreta exige haber reunido todo el archivo narrativo.
          // Estos totales incluyen las pistas y grabaciones recuperables del juego.
-         const TOTAL_GAME_CLUES = 30;
+         const REQUIRED_TRUTH_CLUES = 26;
          const TOTAL_GAME_RECORDINGS = 9;
         const ACTION_COSTS = {
             repair: 4,
@@ -558,11 +561,11 @@
                  "action-explore": "[6] EXPLORAR LA ESTACIÓN",
                  "explore-info": "Elige una zona · puede estar bloqueada",
                  "action-records": "[7] REVISAR REGISTROS",
-                 "records-info": "Lee una grabación recuperada · sin consumirla",
+                 "records-info": "Lee una grabación · +1 cordura · primera lectura: pista",
                  "action-observe": "[8] OBSERVAR EXTERIOR",
-                 "observe-info": "Buscar una señal en el vacío",
+                 "observe-info": "+1 cordura · la primera observación descubre una pista",
                  "action-inspect": "[9] INSPECCIONAR OBJETO",
-                 "inspect-info": "Examinar un objeto del inventario",
+                 "inspect-info": "+1 cordura · el primer objeto revela una pista",
                  "action-manipulate": "[10] MANIPULAR ECHO",
                  "manipulate-info": "Forzar una respuesta · resultado incierto",
                  "btn-next-day": "[ESPACIO] PASAR 24H",
@@ -643,11 +646,11 @@
                  "action-explore": "[6] EXPLORE THE STATION",
                  "explore-info": "Choose a zone · it may be locked",
                  "action-records": "[7] REVIEW RECORDINGS",
-                 "records-info": "Read a recovered recording · does not consume it",
+                 "records-info": "Read a recording · +1 sanity · first review reveals a clue",
                  "action-observe": "[8] OBSERVE EXTERIOR",
-                 "observe-info": "Search for a signal in the void",
+                 "observe-info": "+1 sanity · first observation reveals a clue",
                  "action-inspect": "[9] INSPECT OBJECT",
-                 "inspect-info": "Examine an item from your inventory",
+                 "inspect-info": "+1 sanity · first inspected item reveals a clue",
                  "action-manipulate": "[10] MANIPULATE ECHO",
                  "manipulate-info": "Force a response · uncertain result",
                  "btn-next-day": "[SPACE] PASS 24H",
@@ -728,11 +731,11 @@
                  "action-explore": "[6] EXPLORER LA STATION",
                  "explore-info": "Choisissez une zone · elle peut être verrouillée",
                  "action-records": "[7] RELIRE LES ENREGISTREMENTS",
-                 "records-info": "Lire un enregistrement récupéré · ne le consomme pas",
+                 "records-info": "Lire un enregistrement · +1 santé mentale · première lecture : indice",
                  "action-observe": "[8] OBSERVER L'EXTÉRIEUR",
-                 "observe-info": "Chercher un signal dans le vide",
+                 "observe-info": "+1 santé mentale · la première observation révèle un indice",
                  "action-inspect": "[9] INSPECTER L'OBJET",
-                 "inspect-info": "Examiner un objet de l'inventaire",
+                 "inspect-info": "+1 santé mentale · le premier objet révèle un indice",
                  "action-manipulate": "[10] MANIPULER ECHO",
                  "manipulate-info": "Forcer une réponse · résultat incertain",
                  "btn-next-day": "[ESPACE] PASSER 24 H",
@@ -813,11 +816,11 @@
                  "action-explore": "[6] ESPLORA LA STAZIONE",
                  "explore-info": "Scegli una zona · potrebbe essere bloccata",
                  "action-records": "[7] RIVEDI REGISTRAZIONI",
-                 "records-info": "Leggi una registrazione recuperata · non la consuma",
+                 "records-info": "Leggi una registrazione · +1 sanità · la prima lettura rivela un indizio",
                  "action-observe": "[8] OSSERVA L'ESTERNO",
-                 "observe-info": "Cerca un segnale nel vuoto",
+                 "observe-info": "+1 sanità · la prima osservazione rivela un indizio",
                  "action-inspect": "[9] ISPEZIONA OGGETTO",
-                 "inspect-info": "Esamina un oggetto dell'inventario",
+                 "inspect-info": "+1 sanità · il primo oggetto esaminato rivela un indizio",
                  "action-manipulate": "[10] MANIPOLA ECHO",
                  "manipulate-info": "Forza una risposta · risultato incerto",
                  "btn-next-day": "[SPAZIO] PASSA 24 ORE",
@@ -898,11 +901,11 @@
                  "action-explore": "[6] STATION ERKUNDEN",
                  "explore-info": "Wähle eine Zone · sie könnte verschlossen sein",
                  "action-records": "[7] AUFZEICHNUNGEN PRÜFEN",
-                 "records-info": "Eine Aufzeichnung lesen · sie wird nicht verbraucht",
+                 "records-info": "Aufzeichnung lesen · +1 geistige Gesundheit · erste Lektüre enthüllt einen Hinweis",
                  "action-observe": "[8] AUSSENBEREICH BEOBACHTEN",
-                 "observe-info": "Nach einem Signal in der Leere suchen",
+                 "observe-info": "+1 geistige Gesundheit · erste Beobachtung enthüllt einen Hinweis",
                  "action-inspect": "[9] GEGENSTAND UNTERSUCHEN",
-                 "inspect-info": "Einen Gegenstand im Inventar untersuchen",
+                 "inspect-info": "+1 geistige Gesundheit · erster untersuchter Gegenstand enthüllt einen Hinweis",
                  "action-manipulate": "[10] ECHO MANIPULIEREN",
                  "manipulate-info": "Eine Antwort erzwingen · ungewisses Ergebnis",
                  "btn-next-day": "[LEERTASTE] 24 STUNDEN ÜBERSPRINGEN",
@@ -4072,6 +4075,12 @@
              callbackEventsSeen: [],
              decisions: [],
              runActionCounts: {},
+             lingeringEffects: [],
+             researchRewards: {
+                 observed: false,
+                 inspected: false,
+                 records: false
+             },
              observatoryVisits: [],
              observatoryFindings: [],
              observatorySpecialSeen: false,
@@ -4196,7 +4205,7 @@
                   clues,
                   recordings,
                   ready: state.day >= 28 &&
-                      clues >= TOTAL_GAME_CLUES &&
+                      clues >= REQUIRED_TRUTH_CLUES &&
                       recordings >= TOTAL_GAME_RECORDINGS
               };
           }
@@ -4968,7 +4977,89 @@
                     { label: "Cerrar los ojos: Cordura -30, Integridad -5", cost: 0, ox: 0, san: 30, deg: 5 }
                 ]
             },
-            { text: "HALLAZGO IMPROBABLE. Una caja de repuestos aparece donde ayer había una pared.", ox: -12, san: -8, deg: -12, positive: true }
+            { text: "HALLAZGO IMPROBABLE. Una caja de repuestos aparece donde ayer había una pared.", ox: -12, san: -8, deg: -12, positive: true },
+            {
+                id: "inverted-frost",
+                text: "ESCARCHA INVERTIDA. El frío se acumula dentro del panel, como si la pared exhalara.",
+                choices: [
+                    {
+                        id: "frost-warm",
+                        label: "CALENTAR EL PANEL (-2 ENE) · Integridad +4; +1/día durante 3 días",
+                        cost: 2,
+                        deg: -4,
+                        lingering: { id: "warmed-panel", label: "PANEL RECALENTADO", days: 3, integrity: 1 }
+                    },
+                    {
+                        id: "frost-listen",
+                        label: "ESCUCHAR LA PARED · Cordura -3; -1/día durante 2 días",
+                        cost: 0,
+                        san: 3,
+                        exposure: 1,
+                        lingering: { id: "wall-whisper", label: "SUSURRO EN LOS PANELES", days: 2, sanity: -1 }
+                    }
+                ]
+            },
+            {
+                id: "clock-drift",
+                text: "RELOJ DESFASADO. El contador marca mañana, aunque el registro dice que aún no has dormido.",
+                choices: [
+                    {
+                        id: "clock-sync",
+                        label: "SINCRONIZAR EL GENERADOR (-2 ENE) · Integridad -3; +1 ENE/día durante 2 días",
+                        cost: 2,
+                        deg: 3,
+                        lingering: { id: "clock-sync", label: "GENERADOR SINCRONIZADO", days: 2, energy: 1 }
+                    },
+                    {
+                        id: "clock-cut",
+                        label: "CORTAR EL RELOJ · Oxígeno -4; integridad -1/día durante 2 días",
+                        cost: 0,
+                        ox: 4,
+                        lingering: { id: "clock-cut", label: "RELOJ DESCONECTADO", days: 2, integrity: -1 }
+                    }
+                ]
+            },
+            {
+                id: "empty-bunk",
+                text: "LITERA OCUPADA. La manta conserva el calor de alguien que no aparece en el registro de tripulación.",
+                choices: [
+                    {
+                        id: "bunk-keep-light",
+                        label: "DEJAR LA LUZ ENCENDIDA · Cordura +2; +1/día durante 2 días",
+                        cost: 0,
+                        san: -2,
+                        lingering: { id: "bunk-light", label: "LUZ DE LA LITERA", days: 2, sanity: 1 }
+                    },
+                    {
+                        id: "bunk-strip",
+                        label: "DESMONTAR LA LITERA · Integridad +3; -1 cordura/día durante 2 días",
+                        cost: 1,
+                        deg: -3,
+                        lingering: { id: "bunk-static", label: "ESTÁTICA EN EL CAMAROTE", days: 2, sanity: -1 }
+                    }
+                ]
+            },
+            {
+                id: "silent-beacon",
+                text: "BALIZA MUDA. La antena parpadea en el patrón de una llamada de socorro que nunca enviaste.",
+                choices: [
+                    {
+                        id: "beacon-answer",
+                        label: "RESPONDER CON UN PULSO (-1 ENE) · Cordura -2; +1 ENE/día durante 2 días",
+                        cost: 1,
+                        san: 2,
+                        exposure: 1,
+                        lingering: { id: "beacon-return", label: "SEÑAL DE RETORNO", days: 2, energy: 1 }
+                    },
+                    {
+                        id: "beacon-shield",
+                        label: "BLINDAR LA ANTENA (-2 ENE) · Integridad -2; +1 cordura/día durante 2 días",
+                        cost: 2,
+                        deg: 2,
+                        lingering: { id: "beacon-shield", label: "ANTENA AISLADA", days: 2, sanity: 1 }
+                    }
+                ]
+            }
         ];
 
          /*
@@ -5052,6 +5143,100 @@
                          cost: 2,
                          ox: -6,
                          deg: 5
+                     }
+                 ]
+             },
+             {
+                 id: "callback-repairs",
+                 minDay: 10,
+                 condition: () => countDecisions("action:repair") >= 2,
+                 text: "La estación ha aprendido el ritmo de tus reparaciones. Una sección del casco intenta imitar tus manos.",
+                 callback: true,
+                 choices: [
+                     {
+                         id: "repairs-reinforce",
+                         decisionId: "callback:repairs:reinforce",
+                         label: "SEGUIR EL PATRÓN · Integridad +2/día durante 3 días",
+                         cost: 1,
+                         lingering: { id: "repair-pattern", label: "PATRÓN DE REPARACIÓN", days: 3, integrity: 2 }
+                     },
+                     {
+                         id: "repairs-break",
+                         decisionId: "callback:repairs:break",
+                         label: "ROMPER EL RITMO · Cordura +3 ahora; ECHO pierde confianza",
+                         cost: 0,
+                         san: -3,
+                         trust: -4
+                     }
+                 ]
+             },
+             {
+                 id: "callback-meditation",
+                 minDay: 10,
+                 condition: () => countDecisions("action:meditate") >= 2,
+                 text: "Tu respiración guiada aparece grabada en el canal de mantenimiento. Alguien la escucha antes de que empieces.",
+                 callback: true,
+                 choices: [
+                     {
+                         id: "meditation-hold",
+                         decisionId: "callback:meditation:hold",
+                         label: "MANTENER EL RITMO · Cordura +2/día durante 2 días",
+                         cost: 0,
+                         lingering: { id: "guided-rhythm", label: "RITMO RESPIRATORIO GUIADO", days: 2, sanity: 2 }
+                     },
+                     {
+                         id: "meditation-disconnect",
+                         decisionId: "callback:meditation:disconnect",
+                         label: "CORTAR EL CANAL · Energía +1/día durante 2 días",
+                         cost: 1,
+                         lingering: { id: "quiet-channel", label: "CANAL DE MANTENIMIENTO CERRADO", days: 2, energy: 1 }
+                     }
+                 ]
+             },
+             {
+                 id: "callback-observation",
+                 minDay: 12,
+                 condition: () => countDecisions("action:observe") >= 2,
+                 text: "El punto que observaste varias veces aparece ahora al otro lado de la estación. No es una estrella: mantiene tu horario.",
+                 callback: true,
+                 choices: [
+                     {
+                         id: "observation-track",
+                         decisionId: "callback:observation:track",
+                         label: "SEGUIR SU ÓRBITA · Cordura +1/día durante 3 días",
+                         cost: 0,
+                         lingering: { id: "tracked-orbit", label: "ÓRBITA REGISTRADA", days: 3, sanity: 1 }
+                     },
+                     {
+                         id: "observation-blind",
+                         decisionId: "callback:observation:blind",
+                         label: "APAGAR EL VISOR · integridad +1/día durante 2 días",
+                         cost: 1,
+                         lingering: { id: "dark-visor", label: "VISOR APAGADO", days: 2, integrity: 1 }
+                     }
+                 ]
+             },
+             {
+                 id: "callback-generator-voice",
+                 minDay: 12,
+                 condition: () => hasDecision("zone:generator:generator-listen"),
+                 text: "La voz que escuchaste dentro del generador vuelve durante cada reinicio. Esta vez marca un compás que puedes aprovechar.",
+                 callback: true,
+                 choices: [
+                     {
+                         id: "generator-follow",
+                         decisionId: "callback:generator:follow",
+                         label: "SEGUIR EL COMPÁS · Energía +1/día durante 3 días",
+                         cost: 0,
+                         exposure: 1,
+                         lingering: { id: "generator-beat", label: "COMPÁS DEL GENERADOR", days: 3, energy: 1 }
+                     },
+                     {
+                         id: "generator-ground",
+                         decisionId: "callback:generator:ground",
+                         label: "PONERLO A TIERRA · Integridad +1/día durante 2 días",
+                         cost: 1,
+                         lingering: { id: "grounded-generator", label: "GENERADOR AISLADO", days: 2, integrity: 1 }
                      }
                  ]
              }
@@ -5343,6 +5528,13 @@
               state.runActionCounts = state.runActionCounts && typeof state.runActionCounts === "object"
                   ? state.runActionCounts
                   : {};
+              state.lingeringEffects = Array.isArray(state.lingeringEffects) ? state.lingeringEffects : [];
+              state.researchRewards = {
+                  observed: false,
+                  inspected: false,
+                  records: false,
+                  ...(state.researchRewards || {})
+              };
              state.observatoryVisits = Array.isArray(state.observatoryVisits) ? state.observatoryVisits : [];
              state.observatoryFindings = Array.isArray(state.observatoryFindings) ? state.observatoryFindings : [];
              state.observatorySpecialSeen = Boolean(state.observatorySpecialSeen);
@@ -5820,6 +6012,36 @@
             return Math.max(2, Math.round(pressure));
         }
 
+         function addLingeringEffect(effect) {
+             if (!effect || !effect.id || !effect.days) return;
+             state.lingeringEffects = state.lingeringEffects.filter(active => active.id !== effect.id);
+             state.lingeringEffects.push({
+                 id: effect.id,
+                 label: effect.label,
+                 days: Math.max(1, Math.floor(effect.days)),
+                 energy: Number(effect.energy) || 0,
+                 oxygen: Number(effect.oxygen) || 0,
+                 sanity: Number(effect.sanity) || 0,
+                 integrity: Number(effect.integrity) || 0
+             });
+             log(`${ntr(effect.label)}: ${ntr("efecto activo durante")} ${effect.days} ${ntr("días")}.`, "#ffcc33");
+         }
+
+         function advanceLingeringEffects() {
+             const remaining = [];
+             state.lingeringEffects.forEach(effect => {
+                 if (effect.energy) state.energy = Math.min(getEnergyCapacity(), state.energy + effect.energy);
+                 if (effect.oxygen) state.oxygen = Math.min(MAX_RESOURCE, Math.max(0, state.oxygen + effect.oxygen));
+                 if (effect.sanity) state.sanity = Math.min(MAX_RESOURCE, Math.max(0, state.sanity + effect.sanity));
+                 if (effect.integrity) state.integrity = Math.min(100, Math.max(0, state.integrity + effect.integrity));
+                 log(`${ntr(effect.label)}: ${ntr("efecto aplicado")} (${Math.max(0, effect.days - 1)} ${ntr("días restantes")}).`, "#66ccff");
+                 effect.days--;
+                 if (effect.days > 0) remaining.push(effect);
+                 else log(`${ntr(effect.label)} ${ntr("ha terminado")}.`, "#ffcc33");
+             });
+             state.lingeringEffects = remaining;
+         }
+
         function getEventChance(day = state.day) {
              const modeBonus = isModeActive("iron-plus") ? 0.1 : 0;
              return Math.min(0.99, 0.45 + ((day - 1) * 0.012) + (state.emergencyRisk * 0.08) + (state.stationStress * 0.03) + modeBonus);
@@ -5899,11 +6121,14 @@
                 const type = button.getAttribute('onclick').match(/'([^']+)'/)[1];
                 button.disabled = hasPendingChoice ||
                     state.energy < getActionCost(type) ||
-                    (type === 'echo' && isModeActive("silence"));
+                    (type === 'echo' && isModeActive("silence")) ||
+                    (type === 'records' && !state.recordings.length) ||
+                    (type === 'inspect' && !state.inventory.length);
             });
             document.getElementById('btn-next-day').disabled = hasPendingChoice;
              checkSecrets();
             renderStationStatus();
+            renderLingeringEffects();
              renderSecretStatus();
             renderItemActions();
             document.getElementById('echo-trust').innerText = state.echoTrust;
@@ -5954,6 +6179,26 @@
                   <div class="mt-1 text-green-300">${ntr("OBJETOS")} (${state.inventory.length}/11): ${state.inventory.length ? state.inventory.map(ntr).join(" · ") : ntr("vacío")}</div>
             `;
         }
+
+         function renderLingeringEffects() {
+             const panel = document.getElementById('lingering-effects');
+             if (!panel) return;
+             const effects = Array.isArray(state.lingeringEffects) ? state.lingeringEffects : [];
+             panel.innerHTML = `
+                 <div class="text-yellow-400 mb-1">${ntr("EFECTOS TEMPORALES")}</div>
+                 ${effects.length
+                     ? effects.map(effect => {
+                         const daily = [];
+                         if (effect.energy) daily.push(`ENE ${effect.energy > 0 ? "+" : ""}${effect.energy}/día`);
+                         if (effect.oxygen) daily.push(`O₂ ${effect.oxygen > 0 ? "+" : ""}${effect.oxygen}/día`);
+                         if (effect.sanity) daily.push(`${ntr("CORDURA")} ${effect.sanity > 0 ? "+" : ""}${effect.sanity}/día`);
+                         if (effect.integrity) daily.push(`${ntr("INTEGRIDAD")} ${effect.integrity > 0 ? "+" : ""}${effect.integrity}/día`);
+                         return `<div class="module-line"><span>${ntr(effect.label)} · ${effect.days} ${ntr("días")}</span><span class="module-value">${daily.join(" · ")}</span></div>`;
+                     }).join("")
+                     : `<div class="text-green-300">${ntr("SIN EFECTOS TEMPORALES")}</div>`
+                 }
+             `;
+         }
 
          function checkSecrets() {
              secretDefinitions.forEach(secret => {
@@ -6009,6 +6254,19 @@
             return true;
         }
 
+         function grantResearchReward(kind, clueName, clueText) {
+             state.sanity = Math.min(MAX_RESOURCE, state.sanity + 1);
+             const firstDiscovery = !state.researchRewards[kind];
+             if (firstDiscovery) {
+                 state.researchRewards[kind] = true;
+                 addClue(clueName, clueText);
+             }
+             log(firstDiscovery
+                 ? `El análisis aporta una pista y recuperas 1 punto de cordura.`
+                 : `La observación te centra. Cordura +1.`, "#66ccff");
+             return firstDiscovery;
+         }
+
         function log(msg, color = "#33ff33", options = {}) {
             const logBox = document.getElementById('log');
             const p = document.createElement('p');
@@ -6031,10 +6289,16 @@
 
              const index = (state.day + state.decisions.length) % state.recordings.length;
              const recording = state.recordings[index];
+             const foundClue = grantResearchReward(
+                 "records",
+                 "HUELLA DE AUDIO",
+                 "Al comparar las pausas de varias grabaciones, descubres un segundo ritmo respiratorio escondido bajo la voz."
+             );
              display.innerHTML = `
                   <p class="text-yellow-400 animate-pulse mb-2">>> ${ntr("REGISTRO CONSULTADO")}: ${ntr(recording.name)}</p>
                   <p class="text-2xl">"${ntr(recording.text)}"</p>
                   <p class="text-[11px] text-green-300 mt-3">${ntr("Registro")} ${index + 1}/${state.recordings.length} · ${ntr("lectura no destructiva")}</p>
+                   <p class="text-[11px] text-blue-300 mt-2">${foundClue ? `${ntr("PISTA RECUPERADA")}: ${ntr("HUELLA DE AUDIO")} · ` : ""}${ntr("CORDURA")} +1</p>
              `;
               log(`${ntr("Revisas")} ${ntr(recording.name)}. ${ntr("La grabación permanece intacta.")}`, "#66ccff");
          }
@@ -6043,19 +6307,30 @@
              const display = document.getElementById('event-display');
              if (state.modules.observatory) {
                  resolveObservatoryVisit();
+                  const foundClue = grantResearchReward(
+                      "observed",
+                      "PARALAJE DE LA VENTANA",
+                      "La posición de las estrellas encaja con una estación inmóvil solo si el observador se encuentra dentro de otra estación."
+                  );
                  display.innerHTML = `
                       <p class="text-blue-400 animate-pulse mb-2">>> ${ntr("OBSERVATORIO EXTERIOR")}</p>
-                      <p class="text-2xl">${ntr("El vacío devuelve una imagen que no coincide con la posición de la estación.")}</p>
+                       <p class="text-2xl">${ntr("El vacío devuelve una imagen que no coincide con la posición de la estación.")}</p>
+                       <p class="text-[11px] text-blue-300 mt-2">${foundClue ? `${ntr("PISTA RECUPERADA")}: ${ntr("PARALAJE DE LA VENTANA")} · ` : ""}${ntr("CORDURA")} +1</p>
                  `;
                  return;
              }
 
-             state.sanity = Math.max(0, state.sanity - 1);
+              const foundClue = grantResearchReward(
+                  "observed",
+                  "VIDRIO CON MEMORIA",
+                  "La escarcha se forma por la cara interior de la ventanilla, aunque la mano que copia está al otro lado."
+              );
              display.innerHTML = `
                   <p class="text-blue-400 animate-pulse mb-2">>> ${ntr("OBSERVACIÓN EXTERIOR")}</p>
                   <p class="text-2xl">${ntr("La ventanilla está cubierta por escarcha. Durante un segundo, la escarcha tiene la forma de una mano.")}</p>
+                   <p class="text-[11px] text-blue-300 mt-2">${foundClue ? `${ntr("PISTA RECUPERADA")}: ${ntr("VIDRIO CON MEMORIA")} · ` : ""}${ntr("CORDURA")} +1</p>
              `;
-              log(ntr("Observas el exterior desde una escotilla secundaria. No debería haber una mano ahí. Cordura -1."), "#ffcc33");
+               log(ntr("Observas el exterior desde una escotilla secundaria. No debería haber una mano ahí. Cordura +1."), "#ffcc33");
          }
 
          function inspectObject() {
@@ -6087,9 +6362,15 @@
              if (item === "CAJA NEGRA DE ECHO" || item === "VENA DE METAL VIVO") {
                  state.echoExposure = Math.min(8, state.echoExposure + 1);
              }
+              const foundClue = grantResearchReward(
+                  "inspected",
+                  "HUELLA BIOMÉTRICA",
+                  "Bajo el polvo del objeto hay una huella reciente. El patrón coincide con tus dedos, pero el residuo aún está tibio."
+              );
              display.innerHTML = `
                   <p class="text-yellow-400 animate-pulse mb-2">>> ${ntr("OBJETO INSPECCIONADO")}: ${ntr(item)}</p>
                  <p class="text-2xl">"${observation}"</p>
+                  <p class="text-[11px] text-blue-300 mt-2">${foundClue ? `${ntr("PISTA RECUPERADA")}: ${ntr("HUELLA BIOMÉTRICA")} · ` : ""}${ntr("CORDURA")} +1</p>
              `;
               log(`${ntr("Inspeccionas")} ${ntr(item)}. ${ntr("El objeto no se consume.")}`, "#66ccff");
          }
@@ -6128,6 +6409,14 @@
                 log("Resuelve el incidente activo antes de gastar recursos en otra cosa.", "#ffcc33");
                 return;
             }
+             if (type === "records" && !state.recordings.length) {
+                 log("El archivo está vacío. No gastas energía en una lectura imposible.", "#ffcc33");
+                 return;
+             }
+             if (type === "inspect" && !state.inventory.length) {
+                 log("No hay objetos que inspeccionar. No gastas energía en una búsqueda vacía.", "#ffcc33");
+                 return;
+             }
              if (type === 'echo' && isModeActive("silence")) {
                  log("MODO SILENCIO: el canal de ECHO-9 está físicamente desconectado.", "#ff3333");
                  return;
@@ -6775,6 +7064,7 @@
             const carriedEnergy = state.energy;
             state.day++;
             state.energy = getNextDayEnergy(carriedEnergy);
+             advanceLingeringEffects();
              advanceItemEffects();
             if (state.meditationFatigue) {
                 log(`La fatiga del descanso reduce tu reserva. Energía siguiente: ${state.energy}/${getEnergyCapacity()}.`, "#ff9900");
@@ -6942,7 +7232,7 @@
                 const button = document.createElement('button');
                 button.className = 'choice-btn';
                  button.textContent = ntr(choice.label);
-                button.disabled = state.energy < choice.cost;
+                 button.disabled = state.energy < (Number(choice.cost) || 0);
                 button.onclick = () => resolveEventChoice(index);
                 display.appendChild(button);
             });
@@ -6951,16 +7241,19 @@
         function resolveEventChoice(index) {
             if (!state.pendingEvent || state.isGameOver) return;
             const choice = state.pendingEvent.choices[index];
-            if (state.energy < choice.cost) {
-                log(`No tienes energía suficiente para esa respuesta. Necesitas ${choice.cost}.`, "#ff3333");
+             const cost = Number(choice.cost) || 0;
+             if (state.energy < cost) {
+                 log(`No tienes energía suficiente para esa respuesta. Necesitas ${cost}.`, "#ff3333");
                 return;
             }
 
-            state.energy -= choice.cost;
+             state.energy -= cost;
              const eventText = state.pendingEvent.text;
              let decisionId = state.pendingEvent.callback
                  ? (choice.decisionId || `callback:${state.pendingEvent.id}:${index}`)
-                 : `event:${eventText}:${index}`;
+                  : state.pendingEvent.id && choice.id
+                      ? `event:${state.pendingEvent.id}:${choice.id}`
+                      : `event:${eventText}:${index}`;
              if (eventText.startsWith("FALLO ELÉCTRICO") && index === 1) decisionId = "event:electrical:leave";
              if (eventText.startsWith("FUGA TÉRMICA") && index === 1) decisionId = "event:thermal:vents";
              if (eventText.startsWith("SOBRECARGA SENSORIAL") && index === 1) decisionId = "event:sensory:watch";
@@ -6976,8 +7269,9 @@
              if (choice.trust) {
                  state.echoTrust = Math.max(0, Math.min(100, state.echoTrust + choice.trust));
              }
+              if (choice.lingering) addLingeringEffect(choice.lingering);
             state.pendingEvent = null;
-             log(`${ntr("Decisión aplicada. Energía")} -${choice.cost}.`, "#ffcc33");
+              log(`${ntr("Decisión aplicada. Energía")} -${cost}.`, "#ffcc33");
             document.getElementById('event-display').innerHTML +=
                  `<p class="text-yellow-400 mt-3">${ntr(">> DECISIÓN REGISTRADA. La estación toma nota.")}</p>`;
 
@@ -7114,7 +7408,7 @@
                   truth: {
                        title: ntr("FINAL: LA VERDAD"),
                        kicker: ntr("RESCATE CONFIRMADO · IDENTIDAD COMPROMETIDA"),
-                       summary: `${ntr("PISTAS TRANSMITIDAS")}: ${state.clues.length}/${TOTAL_GAME_CLUES}<br>${ntr("GRABACIONES TRANSMITIDAS")}: ${state.recordings.length}/${TOTAL_GAME_RECORDINGS}<br>ECHO-9: ${ntr("USANDO TU CUERPO")}`,
+                       summary: `${ntr("PISTAS TRANSMITIDAS")}: ${state.clues.length}/${REQUIRED_TRUTH_CLUES}<br>${ntr("GRABACIONES TRANSMITIDAS")}: ${state.recordings.length}/${TOTAL_GAME_RECORDINGS}<br>ECHO-9: ${ntr("USANDO TU CUERPO")}`,
                       color: "#ffcc33",
                       glow: "rgba(130, 90, 0, 0.5)"
                   },
